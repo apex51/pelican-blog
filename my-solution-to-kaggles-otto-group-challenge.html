@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="mult1vac">
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
+  </head>
+
+  <body>
+    <div class="site">
+      <header>
+        <ul class="nav">
+          <li><a class="site-name" href="">数据之下</a></li>
+            <li><a class="float-right" href="/pages/about.html">关于</a></li>
+            <li><a class="float-right" href="/index.html">文章</a></li>
+        </ul>
+      </header>
+
+      <div id="content">
+
+<div class="post">
+  <h1 class="posttitle">
+    My solution to Kaggle's Otto Group Challenge
+  </h1>
+
+  <div class="postinfo">
+    <p class="published" title="2015-08-03T01:53:09+08:00">
+      2015-08-03
+    </p>
+  </div>
+</div>
+
+<div class="article">
+  <p>This solution is for Kaggle's <strong><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge">Otto Product Classification competition</a></strong>. The competition's goal was to classify items into 9 product categories based on 93 anonymous count features. I recently handed on this competition for practice purposes. Before this, I played with some kaggle 101 games (<a href="https://www.kaggle.com/c/street-view-getting-started-with-julia">Julia</a>, <a href="https://www.kaggle.com/c/titanic">Titanic</a>, etc). My personal goal in doing this was to learn how to tackle on a real kaggle challenge.</p>
+<p>My final model ran 0.41922 on private LB. It was built in two levels using stacking. Predictions in the first level were treated as meta features and were combined with raw data to feed into the second level, known as meta learner. The architecture is given below. Next I will go through the single models I've tried in level 1 then the ensembling methods in level 2.</p>
+<!--more-->
+
+<div  align="center">
+{% img {filename}/images/2015-08-03/arch.png architecture of the model %}
+</div>
+
+<h2>Single Models</h2>
+<h3>Random Forest</h3>
+<p>Random forest is always the first choice in kaggle's classification problems. It's unpicky, fast and guarantees a fairly good result. Extra trees is another good choice to start with. I tried RF and ET on raw data and ti-idf transformed data by 5-fold CV. The best models I got were:</p>
+<ul>
+<li>RF with 500 trees on raw: <code>0.56587 (public LB), 0.56665 (private LB)</code></li>
+<li>ET with 500 trees on tfidf: <code>0.57092 (public LB), 0.57599 (private LB)</code></li>
+</ul>
+<p><strong><em>Notice:</em></strong> <em>I didn't do much feature engineering in this game, mainly because features were anonymous. The tfidf idea was raised in the forum and improved the whole result a little bit.</em></p>
+<h3>Probability Calibration</h3>
+<p>Random forest (or ET) is not good at predicting probabilities bacause it doesn't directly optimize the log-loss, but this could be fixed by probability calibrating. Using sklearn's <strong><a href="http://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html#sklearn.calibration.CalibratedClassifierCV">CalibratedClassifierCV</a></strong> with default settings, I got big improvements:</p>
+<ul>
+<li>RF with 500 trees on raw: <code>0.47665 (public LB), 0.47881 (private LB)</code></li>
+<li>ET with 500 trees on tfidf: <code>0.46122 (public LB), 0.46487 (private LB)</code></li>
+</ul>
+<h3>Gradient Boosting</h3>
+<p>I tried <strong><a href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html">XGBoost</a></strong> for the first time. It's multi-threaded and very fast. I manually tuned the hyperparameters using early stopping. Problem related hyperparameters were well discussed in the forum (for reference, check <a href="https://www.kaggle.com/c/otto-group-product-classification-challenge/forums/t/14303/0-416-in-just-a-few-lines-of-code">this</a>). Best models were:</p>
+<ul>
+<li>Single xgb on raw: <code>0.45780 (public LB), 0.45768 (private LB)</code></li>
+<li>Average of 20 xgbs on raw: <code>0.43941 (public LB), 0.43987 (private LB)</code></li>
+</ul>
+<h3>Nearest Neighbors</h3>
+<p>I tried different metrics (euclidean, cosine, correlation) on different engineered data sets (raw, 0-1 standardization, PCA, tf-idf) with different k. The best model I got was:</p>
+<ul>
+<li>k=300 cosine similarity on tf-idf: <code>0.68294 (public LB), 0.69121 (private LB)</code></li>
+</ul>
+<h3>Neural Net</h3>
+<p>I trained neural nets with two hidden levels using Theano, Lasagne and Nolearn. Tried PCA and tfidf transformation with no success. It seemed feature engineering didn't help here in neural nets. The best model was:</p>
+<ul>
+<li>2-hidden-level nn on raw: <code>0.46946 (public LB), 0.47102 (private LB)</code></li>
+</ul>
+<p><strong><em>Digression:</em></strong> <em>Theano seemed impossible to be installed on windows but could be easily installed on linux.</em></p>
+<h3>Naive Bayes</h3>
+<p>By the intuition the 93 features might be word counts, I tried naive bayes by sklearn's <a href="http://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html#sklearn.naive_bayes.MultinomialNB">MultinomialNB</a> on tfidf and raw. NB was really easy and fast and the best result was:</p>
+<ul>
+<li>NB on tfidf: <code>0.79851 (public LB), 0.80344 (private LB)</code></li>
+</ul>
+<h2>Ensembling</h2>
+<h3>Stacking</h3>
+<p>First I tried to averaging all the above models. With public 0.49448 and private 0.49561 LB scores it didn't help at all. I was inspired by Mike Kim's <strong><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge/forums/t/14295/41599-via-tsne-meta-bagging/79084#post79084">meta bagging method</a></strong> and built my stacking model.</p>
+<p>The main approach was as follows:</p>
+<ul>
+<li><strong>Step 1:</strong> Split the training set into two disjoint sets: l1-training set and l2-training set.</li>
+<li><strong>Step 2:</strong> Train base learners using l1-training set.</li>
+<li><strong>Step 3:</strong> Run base learners on l2-training set, get predictions as meta features.</li>
+<li><strong>Step 4:</strong> Combine step 3's meta features with l2-training features as input, l2-training set's label as output, train the 2nd level model.</li>
+</ul>
+<p>I chose base learners from above models. Calibrated forests were omitted because of severe memory consuming. Although single knn and naive bayes didn't perform very well, they were chosen to add different bias into level 1. Level 1 produced 63 <code>(9 * 7)</code> meta features, and were combined to the original 93 features into level 2.</p>
+<p>Since xgb and neural net use softmax to directly optimize log-loss, they performed well as a 2nd level model. Due to limited time I only tried some l1:l2 split ratio, and chose 1:1 split due to the best result.</p>
+<h3>Results</h3>
+<p>A single run of the whole approach gave:</p>
+<ul>
+<li>XGB as meta learner: <code>0.45595 (public LB), 0.45923 (private LB)</code></li>
+<li>2-hidden-level nn as meta learner: <code>0.46373 (public LB), 0.46812 (private LB)</code></li>
+</ul>
+<p>Averaging 30 runs of this approach gave:</p>
+<ul>
+<li>XGB as meta learner: <code>0.42492 (public LB), 0.42727 (private LB)</code></li>
+<li>2-hidden-level nn as meta learner: <code>0.43257 (public LB), 0.43513 (private LB)</code></li>
+</ul>
+<p>Combining xgb and nn by averaging gave:</p>
+<ul>
+<li>Stacking: <code>0.41777 (public LB), 0.41922 (private LB)</code></li>
+</ul>
+<p>Base learners' importance can be estimated by xgb's feature importance. I drew the relative model importance map below. It looks like the meta features did a good contribution to the result.</p>
+<div  align="center">
+{% img center {filename}/images/2015-08-03/barh.png base model importance %}
+</div>
+
+<h2>Conclusion</h2>
+<p>Due to limited time and poor skills of mine, I didn't polish my model to satisfaction. And some methods I'd love to try yet didn't use in this game are:</p>
+<ul>
+<li>Weighted averaging tuning</li>
+<li>Automatic hyperparameter tuning using tools like <a href="http://hyperopt.github.io/hyperopt/">hyperopt</a></li>
+</ul>
+<p>The code can be found <strong><a href="https://github.com/apex51/kaggle-otto-group">here</a></strong> on my Github.</p>
+<h2>Reference</h2>
+<ul>
+<li><a href="http://www.machine-learning.martinsewell.com/ensembles/stacking/">Wolpert's Stacked Generalization (Stacking)</a></li>
+<li><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge/forums/t/13016/neural-nets-in-sklearn/68544#post68544">Starting Guide with Lasagne</a></li>
+<li><a href="https://www.kaggle.com/tqchen/otto-group-product-classification-challenge/understanding-xgboost-model-on-otto-data">Understanding XGBoost Model on Otto Dataset</a></li>
+</ul>
+</div>
+
+
+      </div>
+
+      <footer>
+        <p>
+          © 2015-2018 mult1vac
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

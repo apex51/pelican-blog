@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="mult1vac">
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
+  </head>
+
+  <body>
+    <div class="site">
+      <header>
+        <ul class="nav">
+          <li><a class="site-name" href="">数据之下</a></li>
+            <li><a class="float-right" href="/pages/about.html">关于</a></li>
+            <li><a class="float-right" href="/index.html">文章</a></li>
+        </ul>
+      </header>
+
+      <div id="content">
+
+<div class="post">
+  <h1 class="posttitle">
+    Write-up for Liberty Mutual's Hazard Prediction
+  </h1>
+
+  <div class="postinfo">
+    <p class="published" title="2015-09-05T23:13:47+08:00">
+      2015-09-05
+    </p>
+  </div>
+</div>
+
+<div class="article">
+  <p>I'd say I did not bad (LB top25%) in <a href="https://www.kaggle.com/c/liberty-mutual-group-property-inspection-prediction">this game</a> and still have long way to go. Since for what I've done there are pros and cons, it's time to make a summing-up.</p>
+<p>Liberty Mutual Insurance provides wide range of insurance products. For its home insurance service, newly insured properties need further home inspection to make sure the property is one Liberty Mutual wants to insure. Inspection includes key attributes of the property like the foundation, roof, windows and siding.</p>
+<!--more-->
+
+<p>In this competition, we are given a training set, with each row representing a property's attributes and corresponding historical hazard scores (or damege scores). Then we are required to predict hazard given new property's attributes.</p>
+<h3>Normalized Gini</h3>
+<p>This game uses normalized Gini coefficient as evaluation (check <a href="https://www.kaggle.com/c/liberty-mutual-group-property-inspection-prediction/details/evaluation">this</a> for definition). The definition is a bit vague, and I want to make it clear as follows. </p>
+<ul>
+<li>First, only the order of the prediction matters. After submission, predictions are ordered from largest to smallest. Then we only focus on the corresponding real values and calculate: for the top x% of predictions, what percent of real values are cumulated. A Lorentz curve is drawn then.</li>
+<li>Second, there is a "perfect" curve, your model's curve and a "null" model's curve. Perfect curve assumes the order of predictions are all correct. A null model means a model which generates random predictions. So ideally it will generate a diagonal Lorentz curve. The area between your curve and the diagonal curve is the Gini coefficient, then devided by the perfect model's Gini coefficient gets the normalized one. Python code is given in the end.</li>
+</ul>
+<div  align="center">
+{% img center {filename}/images/2015-09-05/gini.png gini %}
+</div>
+
+<h3>My Solution</h3>
+<h4>Features</h4>
+<p>This competition's features consist of numeric ones and categorical ones. Since they are all anonymous, explicit feature engineering due to their meanings seems not possible.</p>
+<ul>
+<li>
+<p><strong>Feature Transformation:</strong> I found auto encoding and one-hot encoding the categorical variables both useful for non-linear models. One-hot encoding the entire features improves linear models' performance. The number order of auto encoding is a bit tricky: sorting categorical feature by appearance and then auto encoding gives worse performance, compared to Sklearn's default auto encoder. I also did output transformation which improves performance evidently: the output distribution is skewed with a left peak, so I did a <code>1/p</code> exponential transformation with 5-fold CV to find the best <code>p</code>. Logarithm transformation was also added to the models later.</p>
+</li>
+<li>
+<p><strong>Feature Extraction:</strong> I tried to multiply/devide between numeric features and select informative combinations. </p>
+</li>
+<li>
+<p><strong>Feature Selection:</strong> I did a backward selection. First I used random forest and XGBoost to generate feature importance, used Randomized Lasso to select non-zero coefficient features and calculated each feature's Normalized Mutual Information to the response. Then "suspicious" features were highlighted. I ran the model, tested one "suspicious" feature at a time, and deleted it from the entire feature set if it diminished the performance. Five noisy features were dropped in the end.</p>
+</li>
+</ul>
+<h4>Models</h4>
+<ul>
+<li>
+<p><strong>XGBoost:</strong> I had 8 xgboost models, with parameters manually tuned and using early stopping, running on different version of feature set. They worked very well in this competition.</p>
+</li>
+<li>
+<p><strong>Forests:</strong> I built and select 4 tuned random forests. Extra trees performed a bit worse so were not included in the final ensemble. </p>
+</li>
+<li>
+<p><strong>Linear Models:</strong> Lasso and Ridge worked best among all the linear models I tried: Linear Regression with or without regularization, Linear SVR, etc. One-hot transformation was very suitable for these models to improve performance. But they did not work at all in the final ensemble.</p>
+</li>
+<li>
+<p><strong>Other Ideas:</strong> I tried neural network and kNN but they did not work well. I tried to turn this problem into a <code>1</code> or <code>non-1</code> classification problem since <code>1</code> took a large proportion but ended up with poor accuracy. I tried meta bagging method I used in Otto's Challenge but in vain. For about one week I stuck with no LB improvement and finally I came up with the output transformation which helped a small improvement on LB.</p>
+</li>
+</ul>
+<h4>Ensemble</h4>
+<p>I used weighted averaging to ensemble different models. The tool I took is <a href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fmin_cobyla.html">Scipy's COBYLA</a> to combine 5-fold holdout predictions from each model. I find it's handy to keep k-fold's index because new models can be easily thrown into the ensemble afterwards. The final weights of selected models are as follows.</p>
+<div  align="center">
+{% img center {filename}/images/2015-09-05/ensemble.png ensemble %}
+</div>
+
+<h3>Lesson Learnt</h3>
+<p>I read some of the top LB player's solutions after this competition. I would have achieve better results if I adopted one of these good ideas. Anyway, the learning goes on. The following two methods are found to be quite useful in this game and new to me.</p>
+<h4>Poisson Regression</h4>
+<p>The responses are positive integers starting from <code>1</code>. Thus treating <code>y</code> as cout data and using a Poisson Regression seem intuitive. It performs quite well, especially by combining it with XGBoost. The score comparison is (the greater the better):</p>
+<ul>
+<li>XGBoost using <code>reg:logistic</code>: <code>0.37618</code> </li>
+<li>XGBoost using <code>count:poisson</code>: <code>0.37921</code></li>
+</ul>
+<p>I made it clear how Poisson Regression works after reading some references given in the end of the article. It can be understood using the theory of the Exponential Family and Generalized Linear Models. The Poisson distribution parameterized by $\lambda$ is:</p>
+<p>$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} }$$</p>
+<p>Rewrite the distribution as:</p>
+<p>$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} } = \frac{1} { {y!} }\exp (y\log\lambda  - \lambda )$$</p>
+<p>Comparing with the standard form of the exponential family we can get:</p>
+<p>$$b(y) = \frac{1}{ {y!} } \ \eta  = \log \lambda \ T(y) = y \ a(\eta ) = {e^\eta }$$</p>
+<p>Using Generalized Linear Model's constructing rule, the hyposis of Poisson Regression can be written as follows (the first equality uses GLM's second assumption and the third equality uses the fact Poisson distribution's mean is $\lambda$)</p>
+<p>$${h_\theta }(x) = E[T(y)\left| x \right.] = E[y\left| x \right.] = \lambda  = \exp \eta  = \exp ({\theta ^T}x)$$</p>
+<p>So this model outputs variable distribution's expectation. The loss funtion of an example $({x_i},{y_i})$ can be derived from its negative log-likelihood. The log-likelihood is defined as:</p>
+<p>$$logp({y_i}\left| { {x_i};} \right.\theta ) = \log(\frac{1}{ { {y_i}!} }\exp ({y_i} \log {h_\theta }({x_i}) - {h_\theta }({x_i}))) \ = {y_i} \log {h_\theta }({x_i}) - {h_\theta }({x_i}) - \log({y_i}!) $$</p>
+<p>Drop the last part, and write the loss function as:</p>
+<p>$$L({x_i},{y_i}) = {h_\theta}({x_i}) - {y_i}\log{h_\theta}({x_i})$$</p>
+<p>$\theta $ can be estimated using stochastic gradient descent. I failed to find the loss function used in XGB for Poisson, but I guess it might be close to this one:</p>
+<p>$$L({y_i},f({x_i})) = \exp (f({x_i})) - {y_i}f({x_i})$$</p>
+<h4>Stacked Generalization (aka Stacking)</h4>
+<p>In Otto's Challenge I mentioned a modified version of stacking (ie. Meta Bagging) but it did not perform well in this game (only <code>0.3869</code> on private LB, which is not a good score for a complex ensemble). It's a pity I did not try the "original" stacking or stacked generalization, which worked very well here and also works well for many other data science competitions.</p>
+<p>For stacking with 2 levels, predictions from the 1st level are treated as meta-features. Then they are combined by a 2nd level estimator to produce final prediction. This is the basic idea behind stacking. The process of a 5-fold 2-level stacking is as follows:</p>
+<ol>
+<li>Hyperparameter tuning and model selection for 1st-level models.</li>
+<li>Split training set into 5 folds. For each 1st-level model selected and tuned from above:</li>
+<li>Train on each combination of 4 folds and make predictions on the holdout fold. Then combine the five holdout predictions together.</li>
+<li>Train on the entire training set and predict on the testing set.</li>
+<li>Tune, select and train 2nd-level models on the predictions from the 1st level.</li>
+</ol>
+<p>We can see from above that each level 1 model needs training and prediction for 6 times. I usually saw players used stacking with 3-levels: they often choose non-linear models like XGB or NN for level 2 and linear models or weighted averaging methods for level 3. In that case, the 2nd-level models also need to do k+1 times training and prediction to generate training and testing data for the 3rd level. In my limited experience I have never seen stacking with more than 3 levels, probably because of computational complication and severe information leak.</p>
+<p>Some winning cases using stacking will be given in the end.</p>
+<h3>Code</h3>
+<p>Code for gini and code for my solution can be found in my GitHub <a href="https://github.com/apex51/Liberty-hazard-prediction">repository</a>. </p>
+<h3>Reference</h3>
+<ul>
+<li><a href="http://mlwave.com/kaggle-ensembling-guide/">Triskelion's Kaggle Ensembling Guide:</a> useful to know different ensembling methods and tell difference between stacking and blending.</li>
+<li><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge/forums/t/14335/1st-place-winner-solution-gilberto-titericz-stanislav-semenov">1st PLACE - WINNER SOLUTION - Gilberto Titericz &amp; Stanislav Semenov:</a> great ensemble using 3-level stacking for Otto's challenge.</li>
+<li><a href="https://www.kddcup2015.com/information-winners.html">KDD CUP 2015 winner solution: Intercontinental Ensemble:</a> another great ensemble using 3-level stacking.</li>
+<li><a href="http://cs229.stanford.edu/">Stanford CS229 - Generalized Linear Models</a></li>
+</ul>
+</div>
+
+
+      </div>
+
+      <footer>
+        <p>
+          © 2015-2018 mult1vac
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
