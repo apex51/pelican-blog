@@ -52,4 +52,4 @@ def deploy(c):
     c.run('git add -u .', env=env)
     c.run('git commit -m "deploy by fab"', env=env)
     c.run('ghp-import {deploy_path}'.format(**env), env=env)
-    c.run('git push --all origin', env=env)
+    c.run('git push -f --all origin', env=env)
