@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="mult1vac">
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
+  </head>
+
+  <body>
+    <div class="site">
+      <header>
+        <ul class="nav">
+          <li><a class="site-name" href="">数据之下</a></li>
+            <li><a class="float-right" href="/pages/about.html">关于</a></li>
+            <li><a class="float-right" href="/index.html">文章</a></li>
+        </ul>
+      </header>
+
+      <div id="content">
+
+<div class="post">
+  <h1 class="posttitle">
+    Hello Mesos
+  </h1>
+
+  <div class="postinfo">
+    <p class="published" title="2018-06-03T15:43:48+08:00">
+      2018-06-03
+    </p>
+  </div>
+</div>
+
+<div class="article">
+  <p>There's always some new piece of software to be excited about and
+right now it's <a href="http://mesos.apache.org/">Apache Mesos</a>. Mesos is a
+cluster management system intended to make wrangling large numbers of
+machines less of a headache. Unfortunately finding a more detailed
+explanation of how it actually works can be challenging.  The
+official site says:</p>
+<blockquote>
+<p>Apache Mesos abstracts CPU, memory, storage, and other compute
+resources away from machines (physical or virtual), enabling
+fault-tolerant and elastic distributed systems to easily be built
+and run effectively.</p>
+</blockquote>
+<p>Wow that sounds great! But how do I use it?</p>
+<p>The <a href="http://mesosphere.com/">Mesosphere</a> website has a lot of language
+like:</p>
+<blockquote>
+<p>Grow to tens of thousands of nodes effortlessly while dynamically
+allocating resources with ease.</p>
+</blockquote>
+<p>Again, sounds really cool! But I still have no idea how to actually
+program against it.</p>
+<p>Mesos has a lot of hype right now, so most descriptions of it tend to
+be vague and full of buzzwords and hyperbole<sup id="fnref-1"><a class="footnote-ref" href="#fn-1">1</a></sup>. It's difficult to
+find any good examples showing how it actually works. Here I'll detail
+my quest to do just that, and explain the code for my
+<a href="https://gist.github.com/porterjamesj/93e0ba46f0fa6faf660d">Hello World Mesos framework</a>,
+which is hopefully one such example.</p>
+<hr>
+<p>With a bit more googling, it's not too difficult to find 10,000 foot
+view explanations of the mechanics of Mesos. The
+<a href="http://mesos.apache.org/documentation/latest/mesos-architecture/">architecture guide</a>
+on the official site is
+OK. <a href="https://www.youtube.com/watch?v=gVGZHzRjvo0">This talk</a> from
+David Greenberg is a really good explaination of the basic
+concepts. The
+<a href="http://people.csail.mit.edu/matei/papers/2011/nsdi_mesos.pdf">Mesos Paper</a>
+is also quite readable and does a good job justifying the system's
+design.</p>
+<p>The core abstraction of Mesos is a <em>framework</em>, which consists of a
+<em>scheduler</em> and an <em>executor</em>. A scheduler coordinates distributing
+some work, and a executor does some part of that work. Many familiar
+systems fit into this pattern. Consider Hadoop (the <code>JobTracker</code> is a
+scheduler and a <code>TaskTracker</code> is an executor), traditional HPC cluster
+management systems like TORQUE (<code>pbs_sched</code> is an scheduler, <code>pbs_mom</code>
+is an executor), or a web application deployment system (the deploy
+server is a scheduler, the application itself is an executor).</p>
+<p>The goal of Mesos is to abstract the machines in a cluster away from
+all these frameworks that have to run on it. The way this works is
+that the cluster is entirely managed by Mesos—all machines in the
+cluster are configured as Mesos slaves<sup id="fnref-2"><a class="footnote-ref" href="#fn-2">2</a></sup>, which register with a
+Mesos master. The Mesos master makes <em>resource offers</em> (which are
+basically descriptions of an available Mesos slave) to the framework
+schedulers, which can claim those offers for their executors. Mesos
+then handles actually launching executors on slaves, communicating
+executor status back to the framework scheduler, etc. What's cool
+about this is that once you have it set up, you can reallocate
+resources among the various frameworks running in your cluster by
+simply tweaking the settings that determine how Mesos allocates
+resource offers between frameworks, rather than having to manually
+reconfigure your machines.</p>
+<p>What's left unsaid in all of the above, however, is how to actually
+write a Mesos framework. Googling for "mesos hello world" yields
+<a href="https://gist.github.com/guenter/7471695">this</a>, which is pretty neat,
+but I don't know Scala, I've heard Mesos has a Python API, and I
+really like using Python when I'm learning how to do something
+new. Looking for Python examples yields
+<a href="https://github.com/ceteri/exelixi">this</a>, but for some reason its
+author includes extraneous discussion of genetic programming, monoids,
+HDFS, route planning, and a bazillion other things that only serve to
+obscure the main point.</p>
+<p>I just wanted a simple hello world example in Python, which is exactly
+what I'll walk you through now. All of this code that follows assumes
+Mesos version 0.20.0:</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">mesos.interface</span> <span class="kn">import</span> <span class="n">Scheduler</span>
+<span class="kn">from</span> <span class="nn">mesos.native</span> <span class="kn">import</span> <span class="n">MesosSchedulerDriver</span>
+<span class="kn">from</span> <span class="nn">mesos.interface</span> <span class="kn">import</span> <span class="n">mesos_pb2</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">new_task</span><span class="p">(</span><span class="n">offer</span><span class="p">):</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">TaskInfo</span><span class="p">()</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">task_id</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">slave_id</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">offer</span><span class="o">.</span><span class="n">slave_id</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;task {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span>
+
+    <span class="n">cpus</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
+    <span class="n">cpus</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;cpus&quot;</span>
+    <span class="n">cpus</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">Value</span><span class="o">.</span><span class="n">SCALAR</span>
+    <span class="n">cpus</span><span class="o">.</span><span class="n">scalar</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">mem</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
+    <span class="n">mem</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;mem&quot;</span>
+    <span class="n">mem</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">Value</span><span class="o">.</span><span class="n">SCALAR</span>
+    <span class="n">mem</span><span class="o">.</span><span class="n">scalar</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">task</span>
+
+
+<span class="k">class</span> <span class="nc">HelloWorldScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">driver</span><span class="p">,</span> <span class="n">framework_id</span><span class="p">,</span> <span class="n">master_info</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered with framework id: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">framework_id</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">resourceOffers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">driver</span><span class="p">,</span> <span class="n">offers</span><span class="p">):</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Recieved resource offers: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">([</span><span class="n">o</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">offers</span><span class="p">]))</span>
+        <span class="c1"># whenever we get an offer, we accept it and use it to launch a task that</span>
+        <span class="c1"># just echos hello world to stdout</span>
+        <span class="k">for</span> <span class="n">offer</span> <span class="ow">in</span> <span class="n">offers</span><span class="p">:</span>
+            <span class="n">task</span> <span class="o">=</span> <span class="n">new_task</span><span class="p">(</span><span class="n">offer</span><span class="p">)</span>
+            <span class="n">task</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;echo hello world&quot;</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Launching task {task} &quot;</span>
+                         <span class="s2">&quot;using offer {offer}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">task_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                                       <span class="n">offer</span><span class="o">=</span><span class="n">offer</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+            <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="p">]</span>
+            <span class="n">driver</span><span class="o">.</span><span class="n">launchTasks</span><span class="p">(</span><span class="n">offer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tasks</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="c1"># make us a framework</span>
+    <span class="n">framework</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">FrameworkInfo</span><span class="p">()</span>
+    <span class="n">framework</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># Have Mesos fill in the current user.</span>
+    <span class="n">framework</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hello-world&quot;</span>
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">MesosSchedulerDriver</span><span class="p">(</span>
+        <span class="n">HelloWorldScheduler</span><span class="p">(),</span>
+        <span class="n">framework</span><span class="p">,</span>
+        <span class="s2">&quot;zk://localhost:2181/mesos&quot;</span>  <span class="c1"># assumes running on the master</span>
+    <span class="p">)</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+
+<p>Let's step through it one piece at a time. We start with a fairly
+typical slew of standard library imports</p>
+<div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+<span class="kn">import</span> <span class="nn">time</span>
+</pre></div>
+
+
+<p>before importing the relevant parts of the <code>mesos</code> library:</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mesos.interface</span> <span class="kn">import</span> <span class="n">Scheduler</span>
+<span class="kn">from</span> <span class="nn">mesos.native</span> <span class="kn">import</span> <span class="n">MesosSchedulerDriver</span>
+<span class="kn">from</span> <span class="nn">mesos.interface</span> <span class="kn">import</span> <span class="n">mesos_pb2</span>
+</pre></div>
+
+
+<p>Unfortunately <code>mesos</code> is not pip-installable at the moment. The best
+way to use it is to <code>easy_install</code> pre-built eggs for your platform,
+which can be obtained from the
+<a href="https://mesosphere.com/downloads/">Mesosphere downloads page</a>.</p>
+<p>There are two classes involved here. We subclass the <code>Scheduler</code> class
+and implement callbacks containing the logic of our framework. These
+callbacks are invoked when messages are received from the Mesos
+master. The <code>MesosSchedulerDriver</code> handles all communication with the
+master—the scheduler delegates to the driver when it has something to
+communicate. <code>mesos_pb2</code> contains
+<a href="http://en.wikipedia.org/wiki/Protocol_Buffers">protobuf</a> definitions
+that we'll need (Mesos uses protobufs for network communication).</p>
+<p>Next we set up some quick logging</p>
+<div class="highlight"><pre><span></span><span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</pre></div>
+
+
+<p>and declare our scheduler class.</p>
+<div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">HelloWorldScheduler</span><span class="p">(</span><span class="n">Scheduler</span><span class="p">):</span>
+</pre></div>
+
+
+<p>We're going to write a scheduler called <code>HelloWorldScheduler</code>. This
+scheduler is very simple: whenever it gets a resource offer from the
+Mesos master, it uses the offer to launch an executor that runs <code>echo
+hello world</code>. Inheriting from <code>mesos.interface.Scheduler</code> gives us
+stub implementations of the Mesos API methods we aren't going to
+override. You can see a complete list of these methods with their
+descriptions
+<a href="https://github.com/apache/mesos/blob/master/src/python/interface/src/mesos/interface/__init__.py">here</a>. The
+first one is <code>registered</code>:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">driver</span><span class="p">,</span> <span class="n">framework_id</span><span class="p">,</span> <span class="n">master_info</span><span class="p">):</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered with framework id: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">framework_id</span><span class="p">))</span>
+</pre></div>
+
+
+<p><code>registered</code> is a method that gets invoked with when this framework
+registers with the Mesos master. We get passed our the id we've been
+assigned (<code>framework_id</code>) and a protobuf containing information about
+the master we're registered with (<code>master_info</code>). We're just logging
+that this happened, but you could imagine setting up stateful
+resources (e.g. database connections) here.</p>
+<p>Next we implement <code>resourceOffers</code>, which is a method that gets
+invoked when the scheduler receives resource offers from the Mesos
+master.</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">resourceOffers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">driver</span><span class="p">,</span> <span class="n">offers</span><span class="p">):</span>
+    <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Recieved resource offers: {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">([</span><span class="n">o</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">offers</span><span class="p">]))</span>
+    <span class="c1"># whenever we get an offer, we accept it and use it to launch a task that</span>
+    <span class="c1"># just echos hello world to stdout</span>
+    <span class="k">for</span> <span class="n">offer</span> <span class="ow">in</span> <span class="n">offers</span><span class="p">:</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="n">new_task</span><span class="p">(</span><span class="n">offer</span><span class="p">)</span>
+        <span class="n">task</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;echo hello world&quot;</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Launching task {task} &quot;</span>
+                     <span class="s2">&quot;using offer {offer}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">task_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                                   <span class="n">offer</span><span class="o">=</span><span class="n">offer</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="p">]</span>
+        <span class="n">driver</span><span class="o">.</span><span class="n">launchTasks</span><span class="p">(</span><span class="n">offer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tasks</span><span class="p">)</span>
+</pre></div>
+
+
+<p>This is the meat of the scheduler. Let's step through it a few lines
+at a time:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">resourceOffers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">driver</span><span class="p">,</span> <span class="n">offers</span><span class="p">):</span>
+</pre></div>
+
+
+<p><code>resourceOffers</code> is passed the <code>driver</code> that our scheduler is being
+run by, as well as <code>offers</code> (which is a list of protobufs, each of
+which contains information about an offer). Remember that the
+scheduler class only contains our framework specific logic and
+delegates all communication with Mesos to the driver. This is why we
+are passed the driver in this method—we'll need to tell the Mesos
+master what we want to do with these offers<sup id="fnref-3"><a class="footnote-ref" href="#fn-3">3</a></sup>.</p>
+<div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">offer</span> <span class="ow">in</span> <span class="n">offers</span><span class="p">:</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">new_task</span><span class="p">(</span><span class="n">offer</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We iterate over the offers received, creating a new task for
+each. Let's look at the implementation of <code>new_task</code>:</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">new_task</span><span class="p">(</span><span class="n">offer</span><span class="p">):</span>
+    <span class="n">task</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">TaskInfo</span><span class="p">()</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">task_id</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">slave_id</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">offer</span><span class="o">.</span><span class="n">slave_id</span><span class="o">.</span><span class="n">value</span>
+    <span class="n">task</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;task {}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span>
+
+    <span class="n">cpus</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
+    <span class="n">cpus</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;cpus&quot;</span>
+    <span class="n">cpus</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">Value</span><span class="o">.</span><span class="n">SCALAR</span>
+    <span class="n">cpus</span><span class="o">.</span><span class="n">scalar</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">mem</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">resources</span><span class="o">.</span><span class="n">add</span><span class="p">()</span>
+    <span class="n">mem</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;mem&quot;</span>
+    <span class="n">mem</span><span class="o">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">Value</span><span class="o">.</span><span class="n">SCALAR</span>
+    <span class="n">mem</span><span class="o">.</span><span class="n">scalar</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">task</span>
+</pre></div>
+
+
+<p>We instantiate a new <code>TaskInfo</code> protobuf<sup id="fnref-4"><a class="footnote-ref" href="#fn-4">4</a></sup> and fill it in with some
+basic details (a unique id, the id of the slave we want to use, and a
+name). We then request 1 CPU and 1 megabyte of memory. We aren't
+actually checking to make sure the offer contains these resources, but
+it probably does (it's quite a modest request), and we could make
+sure if we wanted to by inspecting the <code>offer.resources</code> list. We then
+return the protobuf. OK, let's jump back to <code>resourceOffers</code>:</p>
+<div class="highlight"><pre><span></span><span class="n">task</span><span class="o">.</span><span class="n">command</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="s2">&quot;echo hello world&quot;</span>
+</pre></div>
+
+
+<p>now that we've created a generic task protobuf, we fill in its
+<code>command</code> field with what we actually want the task to do, in this
+case simply <code>echo hello world</code>.</p>
+<div class="highlight"><pre><span></span><span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Launching task {task} &quot;</span>
+             <span class="s2">&quot;using offer {offer}.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">task_id</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+                                           <span class="n">offer</span><span class="o">=</span><span class="n">offer</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+<span class="n">tasks</span> <span class="o">=</span> <span class="p">[</span><span class="n">task</span><span class="p">]</span>
+<span class="n">driver</span><span class="o">.</span><span class="n">launchTasks</span><span class="p">(</span><span class="n">offer</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">tasks</span><span class="p">)</span>
+</pre></div>
+
+
+<p>We then sleep for 2 seconds (which is there just so it's easier to
+watch the framework run in real time), log the fact of being about to
+launch the task, and do so by calling <code>driver.launchTasks</code> with the id
+of the offer we want to use and the list of tasks we want to launch on
+it<sup id="fnref-5"><a class="footnote-ref" href="#fn-5">5</a></sup>.</p>
+<p>Anyway, that's the entirety of our scheduler class! Now we just need
+to start up a driver and connect to the Mesos master.</p>
+<div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">framework</span> <span class="o">=</span> <span class="n">mesos_pb2</span><span class="o">.</span><span class="n">FrameworkInfo</span><span class="p">()</span>
+    <span class="n">framework</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># Have Mesos fill in the current user.</span>
+    <span class="n">framework</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;hello-world&quot;</span>
+    <span class="n">driver</span> <span class="o">=</span> <span class="n">MesosSchedulerDriver</span><span class="p">(</span>
+        <span class="n">HelloWorldScheduler</span><span class="p">(),</span>
+        <span class="n">framework</span><span class="p">,</span>
+        <span class="s2">&quot;zk://localhost:2181/mesos&quot;</span>  <span class="c1"># assumes running on the master</span>
+    <span class="p">)</span>
+    <span class="n">driver</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</pre></div>
+
+
+<p>The <code>MesosSchedulerDriver</code> takes three parameters: an instance of
+something that implements the <code>Scheduler</code> interface (in our case a
+<code>HelloWorldScheduler</code>), a <code>FrameworkInfo</code> protobuf (which has things
+like the id and name of this framework), and a string containing the
+Zookeeper address URI of the Mesos cluster we want the framework to
+register with<sup id="fnref-6"><a class="footnote-ref" href="#fn-6">6</a></sup>. Note that in this code, we assume that the
+Zookeeper instance is running on the same machine that the framework
+is being started on (in general this doesn't have to be the case). The
+driver we instantiate here is the object that gets passed to the
+scheduler's callbacks to allow it to communicate with Mesos.</p>
+<p>After instantiating the driver, we then call <code>driver.run()</code> to start the framework.</p>
+<p>I ran this code using <code>python hello_mesos.py</code> on a small Mesos cluster
+with a single master and a single slave. What results is:</p>
+<div class="highlight"><pre><span></span>I1116 15:54:31.813361 27339 sched.cpp:139] Version: 0.20.0
+2014-11-16 15:54:31,813:27339(0x7fe781a9d700):ZOO_INFO@log_env@712: Client environment:zookeeper.version=zookeeper C client 3.4.5
+2014-11-16 15:54:31,815:27339(0x7fe781a9d700):ZOO_INFO@log_env@716: Client environment:host.name=mesos-master.novalocal
+2014-11-16 15:54:31,816:27339(0x7fe781a9d700):ZOO_INFO@log_env@723: Client environment:os.name=Linux
+2014-11-16 15:54:31,816:27339(0x7fe781a9d700):ZOO_INFO@log_env@724: Client environment:os.arch=3.13.0-32-generic
+2014-11-16 15:54:31,817:27339(0x7fe781a9d700):ZOO_INFO@log_env@725: Client environment:os.version=#57-Ubuntu SMP Tue Jul 15 03:51:08 UTC 2014
+2014-11-16 15:54:31,818:27339(0x7fe781a9d700):ZOO_INFO@log_env@733: Client environment:user.name=ubuntu
+2014-11-16 15:54:31,819:27339(0x7fe781a9d700):ZOO_INFO@log_env@741: Client environment:user.home=/home/ubuntu
+2014-11-16 15:54:31,820:27339(0x7fe781a9d700):ZOO_INFO@log_env@753: Client environment:user.dir=/home/ubuntu
+2014-11-16 15:54:31,820:27339(0x7fe781a9d700):ZOO_INFO@zookeeper_init@786: Initiating client connection, host=localhost:2181 sessionTimeout=10000 watcher=0x7fe782eefa90 sessionId=0 sessionPasswd=&lt;null&gt; context=0x7fe774000930 flags=0
+2014-11-16 15:54:31,823:27339(0x7fe76ffff700):ZOO_INFO@check_events@1703: initiated connection to server [127.0.0.1:2181]
+2014-11-16 15:54:31,826:27339(0x7fe76ffff700):ZOO_INFO@check_events@1750: session establishment complete on server [127.0.0.1:2181], sessionId=0x149b22cdfe600a8, negotiated timeout=10000
+I1116 15:54:31.826449 27350 group.cpp:313] Group process (group(1)@172.16.1.34:59733) connected to ZooKeeper
+I1116 15:54:31.826498 27350 group.cpp:787] Syncing group operations: queue size (joins, cancels, datas) = (0, 0, 0)
+I1116 15:54:31.826529 27350 group.cpp:385] Trying to create path &#39;/mesos&#39; in ZooKeeper
+I1116 15:54:31.830415 27350 detector.cpp:138] Detected a new leader: (id=&#39;0&#39;)
+I1116 15:54:31.831310 27350 group.cpp:658] Trying to get &#39;/mesos/info_0000000000&#39; in ZooKeeper
+I1116 15:54:31.833284 27350 detector.cpp:426] A new leading master (UPID=master@172.16.1.34:5050) is detected
+I1116 15:54:31.834072 27350 sched.cpp:235] New master detected at master@172.16.1.34:5050
+I1116 15:54:31.835058 27350 sched.cpp:243] No credentials provided. Attempting to register without authentication
+I1116 15:54:31.838003 27349 sched.cpp:409] Framework registered with 20141115-003844-570495148-5050-6532-0067
+INFO:root:Registered with framework id: value: &quot;20141115-003844-570495148-5050-6532-0067&quot;
+
+INFO:root:Recieved resource offers: [u&#39;20141115-003844-570495148-5050-6532-387&#39;]
+INFO:root:Got a resource offer.
+INFO:root:Launching task bcebedef-6e37-450d-99ca-84206a5385de using offer 20141115-003844-570495148-5050-6532-387.
+INFO:root:Recieved resource offers: [u&#39;20141115-003844-570495148-5050-6532-388&#39;]
+INFO:root:Got a resource offer.
+INFO:root:Launching task 197bcdd0-91e0-4647-a271-00356c6e1133 using offer 20141115-003844-570495148-5050-6532-388.
+INFO:root:Recieved resource offers: [u&#39;20141115-003844-570495148-5050-6532-389&#39;]
+INFO:root:Got a resource offer.
+INFO:root:Launching task 376f65f6-f7c2-4e0a-8307-a7c489348a4e using offer 20141115-003844-570495148-5050-6532-389.
+. . .
+</pre></div>
+
+
+<p>The log messages go on forever as the scheduler continuously receives
+a single resource offer (corresponding to the single slave) and
+launches <code>echo hello world</code> on it.</p>
+<p>We can see that the task is running successfully by <code>ssh</code>ing into the
+slave and checking the <code>stdout</code> of one of the tasks (all of which are
+saved in logfiles):</p>
+<div class="highlight"><pre><span></span>ubuntu@mesos-slave:~$ cat /tmp/mesos/slaves/20141115-003844-570495148-5050-6532-0/frameworks/20141115-003844-570495148-5050-6532-0067/executors/bcebedef-6e37-450d-99ca-84206a5385de/runs/latest/stdout
+Registered executor on mesos-slave.novalocal
+Starting task bcebedef-6e37-450d-99ca-84206a5385de
+Forked command at 13319
+sh -c &#39;echo hello world&#39;
+hello world
+Command exited with status 0 (pid: 13319)
+</pre></div>
+
+
+<p>Ta-da! A Mesos framework in 60 lines of code.</p>
+<p>Hopefully this helps to clarify somewhat how the system works for
+others who were confused.</p>
+<div class="footnote">
+<hr>
+<ol>
+<li id="fn-1">
+<p>This isn't helped by that fact that people deploying a Mesos
+  cluster don't usually have to program directly against it
+  themselves, but rather just use frameworks already written by
+  other people—knowing the details of what's going on underneath
+  is an afterthought.&#160;<a class="footnote-backref" href="#fnref-1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn-2">
+<p>I feel uncomfortable using the master/slave terminology and
+  <a href="https://github.com/django/django/pull/2692">agree with the Django team</a>
+  that it's bad, but it's the official Mesos terminology, so in
+  order to avoid confusion I defer and reluctantly describe things
+  this way.&#160;<a class="footnote-backref" href="#fnref-2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn-3">
+<p>As far as where the driver comes from in the first place, we'll
+  get there, be patient.&#160;<a class="footnote-backref" href="#fnref-3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+<li id="fn-4">
+<p>By the way, you can read all of the Mesos protobuf definitions
+  <a href="https://github.com/apache/mesos/blob/master/include/mesos/mesos.proto">here</a>.
+  This can be pretty useful for figuring out what your options are
+  when communicating using them, as well as just how the system
+  works in general. Some of the comments are very handy, it's a
+  shame they're buried here rather than displayed prominently in
+  the documentation.&#160;<a class="footnote-backref" href="#fnref-4" title="Jump back to footnote 4 in the text">&#8617;</a></p>
+</li>
+<li id="fn-5">
+<p>One confusing bit here is the seemingly useless creation of a
+  reference (<code>tasks</code>) to the list containing the single task we
+  want to launch. It would seems simpler to just do
+  <code>driver.launchTasks(offer.id, [tasks])</code>. I am not sure why this
+  happens, but when I do that, the driver's Python-C++ interface
+  crashes
+  <a href="https://github.com/apache/mesos/blob/0.20.1/src/python/native/src/mesos/native/mesos_scheduler_driver_impl.cpp#L462-L463">here</a>. I
+  suspect some sort of GC issue.&#160;<a class="footnote-backref" href="#fnref-5" title="Jump back to footnote 5 in the text">&#8617;</a></p>
+</li>
+<li id="fn-6">
+<p>Mesos uses Zookeeper for state tracking and leader
+  election.&#160;<a class="footnote-backref" href="#fnref-6" title="Jump back to footnote 6 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
+</div>
+
+
+      </div>
+
+      <footer>
+        <p>
+          © 2015-2018 mult1vac
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
