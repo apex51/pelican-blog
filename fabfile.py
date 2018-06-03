@@ -6,7 +6,7 @@ from invoke import task
 env = {}
 env['deploy_path'] = 'output'
 env['github_pages_branch'] = 'gh_pages'
-env['PATH'] = '/usr/local/bin:/Users/hao/anaconda3/bin:$PATH'
+env['PATH'] = '/Users/hao/.gitconfig:/usr/local/bin:/Users/hao/anaconda3/bin:$PATH'
 
 @task
 def clean(c):
