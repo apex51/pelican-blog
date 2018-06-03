@@ -39,4 +39,5 @@ THEME = 'theme'
 NOW = datetime.now()
 LOAD_CONTENT_CACHE = False
 
-STATIC_PATHS = ['images']
+STATIC_PATHS = ['images', 'extra/CNAME']
+EXTRA_PATH_METADATA = {'extra/CNAME': {'path': 'CNAME'}}
