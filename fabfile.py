@@ -6,7 +6,7 @@ from invoke import task
 env = {}
 env['deploy_path'] = 'output'
 env['github_pages_branch'] = 'gh_pages'
-env['PATH'] = '/Users/hao/.gitconfig:/usr/local/bin:/Users/hao/anaconda3/bin:$PATH'
+env['PATH'] = '/usr/local/bin:/Users/hao/anaconda3/bin:$PATH'
 
 @task
 def clean(c):
@@ -52,4 +52,4 @@ def deploy(c):
     c.run('git add -u .', env=env)
     c.run('git commit -m "deploy by fab"', env=env)
     c.run('ghp-import {deploy_path}'.format(**env), env=env)
-    c.run('git push -f --all origin', env=env)
+    c.run('source /Users/hao/.bash_profile && git push -f --all origin', env=env)
