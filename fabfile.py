@@ -6,15 +6,15 @@ from invoke import task
 env = {}
 env['deploy_path'] = 'output'
 env['github_pages_branch'] = 'gh_pages'
-env['PATH'] = '/Users/hao:/usr/local/bin:/Users/hao/anaconda3/bin:$PATH'
+env['PATH'] = '/usr/local/bin/git:/Users/hao/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin'
 
 @task
 def clean(c):
     """Remove generated files"""
-    if os.path.isdir(DEPLOY_PATH):
-        shutil.rmtree(DEPLOY_PATH)
+    if os.path.isdir(env['deploy_path']):
+        shutil.rmtree(env['deploy_path'])
 
-@task
+@task()
 def build(c):
     """Build local version of site"""
     c.run('pelican -s pelicanconf.py', env=env)
@@ -53,3 +53,7 @@ def deploy(c):
     c.run('git commit -m "deploy by fab"', env=env)
     c.run('ghp-import {deploy_path}'.format(**env), env=env)
     c.run('git push -f --all origin', env=env)
+
+@task
+def test(c):
+    c.run('echo $PATH', env=env)
