@@ -5,7 +5,7 @@ from datetime import datetime
 
 AUTHOR = 'mult1vac'
 SITENAME = '数据之下'
-SITEURL = ''
+SITEURL = 'mult1vac.me'
 
 PATH = 'content'
 
