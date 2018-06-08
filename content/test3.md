@@ -4,7 +4,7 @@ Slug: test3
 Tags: Mesos
 Author: mult1vac
 Summary: The tiniest Apache Mesos framework
-Status: published
+Status: draft
 
 There's always some new piece of software to be excited about and
 right now it's [Apache Mesos](http://mesos.apache.org/). Mesos is a
