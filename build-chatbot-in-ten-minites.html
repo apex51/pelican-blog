@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="mult1vac">
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
+  </head>
+
+  <body>
+    <div class="site">
+      <header>
+        <ul class="nav">
+          <li><a class="site-name" href="">数据之下</a></li>
+            <li><a class="float-right" href="/pages/about.html">关于</a></li>
+            <li><a class="float-right" href="/index.html">文章</a></li>
+        </ul>
+      </header>
+
+      <div id="content">
+
+<div class="post">
+  <h1 class="posttitle">
+    十分钟搭建一个加密货币虚拟助手 Chatbot
+  </h1>
+
+  <div class="postinfo">
+    <p class="published" title="2018-06-12T23:03:00+08:00">
+      2018-06-12
+    </p>
+  </div>
+</div>
+
+<div class="article">
+  <p><img alt="" src="/images/2/os.jpg"></p>
+<p>本文是一篇使用 Google Dialogflow、Python 和 Telegram 快速搭建聊天机器人的教程，bot 能根据提问，帮你从 <a href="https://www.worldcoinindex.com/">WorldCoinIndex</a> 上找到对应的货币价格。搭建的过程能帮你快速了解 Chatbot 的简单原理。Let’s go！</p>
+<h3>什么是 Dialogflow？</h3>
+<p><img alt="" src="/images/2/dialog-flow.png"></p>
+<p><a href="https://dialogflow.com/">Dialogflow</a> 来自 Google，它为开发者提供了快速搭建虚拟助手的工具，前身是 API.ai，于 2017 年 10 月 10 日更名为 Dialogflow。市场上类似的产品还有 FB 的 wit.ai、IBM 的 Watson 和 MS 的 luis.ai。（关于他们的详细对比可参考这篇 <a href="http://qr.ae/TUprvT">Quora</a> 的帖子）</p>
+<h3>准备工作</h3>
+<p>在开始前，需要做好下面的准备，所有账户都免费。</p>
+<ul>
+<li>一个 <a href="https://dialogflow.com/">Dialogflow</a> 账户。</li>
+<li>一个 <a href="www.pythonanywhere.com">pythonanywhere</a> 账户，用来做 web 服务托管。</li>
+<li>一个 <a href="http://telegram.me/">Telegram</a> 账户，作为聊天界面。</li>
+</ul>
+<h3>创建聊天机器人核心</h3>
+<p>进入 Dialogflow 的控制台，创建一个新的 agent，取名叫 CryptoAssistant，对话语言选择中文。</p>
+<h4>创建实体</h4>
+<p>实体是从对话中抽取出的信息，这里需要为数字货币的名称创建实体。点击 Entities，点击 Create Entity，取名 coin_name，输入「EOS」，「比特币」，「以太坊」，Save 保存。</p>
+<p><img alt="" src="/images/2/entity.png"></p>
+<h4>创建意图和默认回答</h4>
+<p>点击 Intents，点击 Create Intents，取名 ask_price。系统自带的 Default Fallback Intent 和 Default Welcome Intent 先不管。</p>
+<p>添加 Training Phrases，输入「比特币的价格是多少？」，「以太坊现在多少钱了？」，「EOS价格几多？」，可以看到定义的实体自动被抽取出，识别符号为 coin_name。</p>
+<p>添加 Responses，输入「不要问我$coin_name的价格，老夫炒币一把梭。」点击 Save 保存。</p>
+<p>这时候可以在最右侧的 Try it now 中查看效果，输入「比特币现在所少钱了」，可以看到回答生效了。</p>
+<p><img alt="" src="/images/2/intents.png"></p>
+<h4>创建 Python Web 服务</h4>
+<p>提取出货币名称后，需要调用网络服务来查询货币价格，网络服务免费托管在 pythonanywhere 上。进入 pythonanywhere 的后台，添加一个 Web apps。访问 your_name.pythonanywhere.com 能够看到「Hello from Flask!」。点击 flask_app.py，输入下面的代码，保存并刷新。</p>
+<div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">jsonify</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">request</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">coin_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;比特币&quot;</span><span class="p">:</span> <span class="s2">&quot;btcbtc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;以太坊&quot;</span><span class="p">:</span> <span class="s2">&quot;ethbtc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;莱特币&quot;</span><span class="p">:</span> <span class="s2">&quot;ltcbtc&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;EOS&quot;</span><span class="p">:</span> <span class="s2">&quot;eosbtc&quot;</span>
+<span class="p">}</span>
+
+<span class="c1"># Pull crypto prices from web</span>
+<span class="n">wci_url</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;https://www.worldcoinindex.com/apiservice/ticker?&quot;</span>
+           <span class="s2">&quot;key=SDG0iXcdsHXmXUhhEvYHYhTwhF2Wj8&quot;</span>
+           <span class="s2">&quot;&amp;label={}&amp;fiat=usd&quot;</span><span class="p">)</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">hello_world</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">fulfillmentText</span><span class="o">=</span><span class="s1">&#39;Hello from Flask!&#39;</span><span class="p">)</span>
+
+<span class="nd">@app.route</span><span class="p">(</span><span class="s1">&#39;/get_price&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;POST&#39;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">get_price</span><span class="p">():</span>
+    <span class="n">json</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get_json</span><span class="p">()</span>
+    <span class="n">coin_name</span> <span class="o">=</span> <span class="n">json</span><span class="p">[</span><span class="s2">&quot;queryResult&quot;</span><span class="p">][</span><span class="s2">&quot;parameters&quot;</span><span class="p">][</span><span class="s2">&quot;coin_name&quot;</span><span class="p">]</span>
+    <span class="n">default_response</span> <span class="o">=</span> <span class="n">json</span><span class="p">[</span><span class="s2">&quot;queryResult&quot;</span><span class="p">][</span><span class="s2">&quot;fulfillmentText&quot;</span><span class="p">]</span>
+
+    <span class="n">coin_code</span> <span class="o">=</span> <span class="n">coin_dict</span><span class="p">[</span><span class="n">coin_name</span><span class="p">]</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wci_url</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">coin_code</span><span class="p">))</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;Markets&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;Price&quot;</span><span class="p">]</span>
+    <span class="n">fiat_unit</span> <span class="o">=</span> <span class="s2">&quot;美元&quot;</span>
+    <span class="n">success_response</span> <span class="o">=</span> <span class="s2">&quot;{}的价格是{:.2f}{}&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">coin_name</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">fiat_unit</span><span class="p">)</span>
+
+    <span class="n">dic</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;fulfillmentText&#39;</span><span class="p">:</span><span class="n">success_response</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">dic</span><span class="p">)</span>
+</pre></div>
+
+
+<h3>创建 webhook</h3>
+<p>回到 Dialogflow，进入 Fulfillment，enable Webhook，输入 pythonanywhere 的 URL，选择 enable webhook for all domains，Save 保存。</p>
+<p><img alt="" src="/images/2/fulfillment.png"></p>
+<p>回到 Intents，进入 ask_price，在 Fulfillment 中 enable webhook call for this intent，Save 保存。</p>
+<p>这时候在右侧输入问题，就能获得价格信息了。</p>
+<p><img alt="" src="/images/2/price_no_context.png"></p>
+<h4>创建上下文</h4>
+<p>假如我们问完比特币价格后，想随口问一下「以太坊呢？」，希望也能正确回答。这就需要根据上一个问题的上下文来推断这个问题的意图了。在 ask_price intent 的 context 中添加一条 Output context，取名叫 coin_name。Save。</p>
+<p><img alt="" src="/images/2/context1.png"></p>
+<p>新建一个 intent，取名 ask_price.context，在 Training Phrases 中添加「那比特币呢？」，「以太坊呢？」，「EOS怎么样？」，Responses 中添加「这我就不知道啦！」，Fulfillment 中开启 Enable webhook call for this intent。保存。这时候在右侧先问「比特币价格是多少」后，问「EOS呢？」，会发现上下文功能已经 OK。</p>
+<p><img alt="" src="/images/2/context2.png"></p>
+<h4>修改欢迎内容和错误回滚内容</h4>
+<p>Default Welcome Intent 和 Default Fallback Intent 分别是系统欢迎的内容和不能识别后显式地内容，将其按照你的喜好修改、保存即可。这样聊天机器人的核心就完成了。</p>
+<h3>创建 Telegram 并绑定</h3>
+<p>Telegram 申请一个机器人账号非常简单，在聊天中添加 <a href="https://telegram.me/botfather">BotFather</a> 后，按照爸爸的提示一步步创建一个名为 Price Doge 的 Bot。</p>
+<p>在 Dialogflow 的 Integration 里面，绑定 Telegram，输入 Telegram token。</p>
+<p><img alt="" src="/images/2/chat.png"></p>
+<h3>完成</h3>
+<p>至此，一个简单的虚拟助手已经完成！你可以愉快地在 Telegram 中使用它了。在此基础上，可以不断丰富它的功能。</p>
+</div>
+
+
+      </div>
+
+      <footer>
+        <p>
+          © 2015-2018 mult1vac
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>

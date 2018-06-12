@@ -115,6 +115,11 @@ body {
     display: block;
     max-width: 586px;
     height: auto;
+    border-top: 1px solid #bbb;
+    border-bottom: 1px solid #bbb;
+    border-left: 1px solid #bbb;
+    border-right: 1px solid #bbb;
+
 }
 
 .article ul, .article ol {
