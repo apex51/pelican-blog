@@ -7,7 +7,8 @@ Slug: chatbot-startups-domestic
 Authors: mult1vac
 Status: published
 
-# 国内 Chatbot 初创公司收集
+![]({filename}/images/4/startup2.jpeg)
+
 [一个AI](http://www.yige.ai/)
 类型：ToB、ToD
 领域：Bot 创建平台

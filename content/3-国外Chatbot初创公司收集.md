@@ -7,6 +7,8 @@ Slug: chatbot-startups-abroad
 Authors: mult1vac
 Status: published
 
+![]({filename}/images/3/startup.jpeg)
+
 [AdmitHub](https://www.admithub.com/)
 类型：ToB
 领域：教育
