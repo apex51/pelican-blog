@@ -10,10 +10,10 @@ Status: published
 ![]({filename}/images/4/startup2.jpeg)
 
 [一个AI](http://www.yige.ai/)
-类型：ToB、ToD
-领域：Bot 创建平台
-位置：北京
-由世纪佳缘开发的免费创建虚拟对话机器人（Bot）应用的在线平台。
+* 类型：ToB、ToD
+* 领域：Bot 创建平台
+* 位置：北京
+* 由世纪佳缘开发的免费创建虚拟对话机器人（Bot）应用的在线平台。
 
 [bind.ai](https://www.bind.ai/)
 类型：ToB
@@ -145,3 +145,4 @@ ToC 方面，使用对话方式，为用户提供订阅、提醒、打卡、咖�
 
 Reference
 https://zhuanlan.zhihu.com/p/25749274
+
