@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="cn">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="author" content="mult1vac">
+    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
+  </head>
+
+  <body>
+    <div class="site">
+      <header>
+        <ul class="nav">
+          <li><a class="site-name" href="">数据之下</a></li>
+            <li><a class="float-right" href="/pages/about.html">关于</a></li>
+            <li><a class="float-right" href="/index.html">文章</a></li>
+        </ul>
+      </header>
+
+      <div id="content">
+
+<div class="post">
+  <h1 class="posttitle">
+    Chatbot 2 - 自己动手写带场景感知的虚拟助手
+  </h1>
+
+  <div class="postinfo">
+    <p class="published" title="2018-06-20T23:06:08+08:00">
+      2018-06-20
+    </p>
+  </div>
+</div>
+
+<div class="article">
+  <p><img alt="" src="/images/5/context.jpg"></p>
+<p>接上一篇<a href="multivac.com/build-chatbot-in-ten-minutes.html">Chatbot 1 - 使用 Dialogflow 十分钟搭建虚拟助手</a>，这次我们将不再依赖 Dialogflow 提供的功能，而是从零到一手写代码，探索聊天机器人的基本工作原理，并搭建一个意式餐厅的在线客服机器人。</p>
+<h2>训练对话意图</h2>
+<p>上篇中，我们在 Dialogflow 中的 Intent 中设置了一系列的对话，作为模型学习的样本。这里我们同样需要为机器人构建不同的 Intent 可能遇到的问题和回答，以提供给神经网络模型学习，配置的内容通过 JSON 格式保存。下面示例展示「推荐菜单」这个意图的定义。完整版的 JSON 文件在<a href="https://github.com/apex51/my-chatbot-code/blob/master/chatbot-2/intents.json">这里</a>。</p>
+<div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;intents&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;dishes&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;phrases&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;你们有什么推荐菜吗&quot;</span><span class="p">,</span> <span class="s2">&quot;顾客经常会点什么菜&quot;</span><span class="p">,</span> <span class="s2">&quot;大家喜欢吃什么菜&quot;</span><span class="p">,</span> <span class="s2">&quot;你们最好吃的菜是什么&quot;</span><span class="p">],</span>
+      <span class="nt">&quot;replies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;罗勒披萨、千层面和海鲜饭&quot;</span><span class="p">,</span> <span class="s2">&quot;顾客喜欢我们的罗勒披萨、千层面和海鲜饭&quot;</span><span class="p">,</span> <span class="s2">&quot;罗勒披萨比较受欢迎，千层面和海鲜饭也值得推荐&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+      <span class="err">...</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<ul>
+<li><strong>intent</strong>: 意图标签</li>
+<li><strong>phrases</strong>: 该意图可能的问题，将会被神经网络学习</li>
+<li><strong>replies</strong>: 可能的回答</li>
+</ul>
+<p>加载 JSON 文件，并对文本内容进行预处理 - 分词和去停词。</p>
+<div class="highlight"><pre><span></span><span class="c1"># 加载 JSON 文件</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;intents.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_data</span><span class="p">:</span>
+    <span class="n">intents</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+
+<span class="n">words</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># 词汇表</span>
+<span class="n">classes</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># 意图类型</span>
+<span class="n">documents</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># 句子</span>
+<span class="n">ignore_words</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;？&quot;</span><span class="p">,</span> <span class="s2">&quot;的&quot;</span><span class="p">,</span> <span class="s2">&quot;。&quot;</span><span class="p">,</span> <span class="s2">&quot;！&quot;</span><span class="p">,</span> <span class="s2">&quot;你们&quot;</span><span class="p">,</span> <span class="s2">&quot;是&quot;</span><span class="p">,</span> <span class="s2">&quot;有&quot;</span><span class="p">,</span> <span class="s2">&quot;吗&quot;</span><span class="p">,</span> <span class="s2">&quot;我&quot;</span><span class="p">,</span> <span class="s2">&quot;想&quot;</span><span class="p">,</span> <span class="s2">&quot;我能&quot;</span><span class="p">,</span> <span class="s2">&quot;不&quot;</span><span class="p">,</span> <span class="s2">&quot;什么&quot;</span><span class="p">,</span> <span class="s2">&quot;最&quot;</span><span class="p">]</span>
+<span class="n">suggest_words</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;老板好&quot;</span><span class="p">,</span> <span class="s2">&quot;下次见&quot;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">suggest_words</span><span class="p">:</span>
+    <span class="n">jieba</span><span class="o">.</span><span class="n">suggest_freq</span><span class="p">(</span><span class="n">word</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># 文本预处理</span>
+<span class="k">for</span> <span class="n">intent</span> <span class="ow">in</span> <span class="n">intents</span><span class="p">[</span><span class="s1">&#39;intents&#39;</span><span class="p">]:</span>
+    <span class="k">for</span> <span class="n">phrase</span> <span class="ow">in</span> <span class="n">intent</span><span class="p">[</span><span class="s1">&#39;phrases&#39;</span><span class="p">]:</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">jieba</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">phrase</span><span class="p">,</span> <span class="n">cut_all</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+        <span class="n">words</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">w</span><span class="p">)</span>
+        <span class="n">documents</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">w</span><span class="p">,</span> <span class="n">intent</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">intent</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">classes</span><span class="p">:</span>
+            <span class="n">classes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">intent</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">])</span>
+
+<span class="n">words</span> <span class="o">=</span> <span class="p">[</span><span class="n">w</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span> <span class="k">if</span> <span class="n">w</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_words</span><span class="p">]</span>
+<span class="n">words</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">words</span><span class="p">)))</span>
+<span class="n">classes</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">classes</span><span class="p">)))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">documents</span><span class="p">),</span> <span class="s2">&quot;documents&quot;</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">classes</span><span class="p">),</span> <span class="s2">&quot;classes&quot;</span><span class="p">,</span> <span class="n">classes</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">),</span> <span class="s2">&quot;words&quot;</span><span class="p">,</span> <span class="n">words</span><span class="p">)</span>
+</pre></div>
+
+
+<p>共有 25 句话，8 个意图类别，48 个不一样的词。</p>
+<div class="highlight"><pre><span></span>25 documents
+8 classes [&#39;book&#39;, &#39;dishes&#39;, &#39;goodbye&#39;, &#39;greeting&#39;, &#39;hours&#39;, &#39;promotions&#39;, &#39;thanks&#39;, &#39;today&#39;]
+48 words [&#39;Hello&#39;, &#39;下次&#39;, &#39;不&#39;, &#39;什么&#39;, &#39;今天&#39;, &#39;会&#39;, &#39;你们&#39;, &#39;你好&#39;, &#39;促销&#39;, &#39;关门&#39;, &#39;再见&#39;, &#39;几点&#39;, &#39;吃&#39;, &#39;吗&#39;, &#39;喜欢&#39;, &#39;在&#39;, &#39;大家&#39;, &#39;好&#39;, &#39;好吃&#39;, &#39;帮助&#39;, &#39;店内&#39;, &#39;座位&#39;, &#39;开门&#39;, &#39;想&#39;, &#39;感谢&#39;, &#39;我&#39;, &#39;我能&#39;, &#39;打折&#39;, &#39;拜拜&#39;, &#39;推荐&#39;, &#39;支持&#39;, &#39;是&#39;, &#39;晚上&#39;, &#39;最&#39;, &#39;最近&#39;, &#39;有&#39;, &#39;有人&#39;, &#39;活动&#39;, &#39;点&#39;, &#39;经常&#39;, &#39;老板&#39;, &#39;菜&#39;, &#39;营业时间&#39;, &#39;见&#39;, &#39;订餐&#39;, &#39;谢谢&#39;, &#39;顾客&#39;, &#39;预定&#39;]
+</pre></div>
+
+
+<p>Tensorflow 只能读取数值，因此我们需要将预处理好的文本转为向量，这样才能训练。训练的过程是为了学习问题的意图，因此意图的标识作为训练的标签。使用词袋模型对文本向量化的代码如下：</p>
+<div class="highlight"><pre><span></span><span class="n">training</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">output</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">output_empty</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">classes</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">:</span>
+    <span class="n">bag</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">pattern_words</span> <span class="o">=</span> <span class="n">doc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+        <span class="n">bag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">pattern_words</span> <span class="k">else</span> <span class="n">bag</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">output_row</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">output_empty</span><span class="p">)</span>
+    <span class="n">output_row</span><span class="p">[</span><span class="n">classes</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="n">training</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">bag</span><span class="p">,</span> <span class="n">output_row</span><span class="p">])</span>
+
+<span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
+<span class="n">training</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
+
+<span class="n">train_x</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">training</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
+<span class="n">train_y</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">training</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">])</span>
+</pre></div>
+
+
+<p>处理后的向量变为：</p>
+<div class="highlight"><pre><span></span>train_x[0]:
+[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+train_y[0]:
+[0, 0, 0, 0, 0, 1, 0, 0]
+</pre></div>
+
+
+<p>现在我们可以训练文本分类的神经网络模型了。这里使用 tflearn 这个包，它对 Tensorflow 做了封装，使得开发更加便捷。</p>
+<div class="highlight"><pre><span></span><span class="n">tf</span><span class="o">.</span><span class="n">reset_default_graph</span><span class="p">()</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">input_data</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_x</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">fully_connected</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">fully_connected</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">12</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">fully_connected</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_y</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax&#39;</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">DNN</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">tensorboard_dir</span><span class="o">=</span><span class="s1">&#39;saved/tflearn_logs&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_x</span><span class="p">,</span> <span class="n">train_y</span><span class="p">,</span> <span class="n">n_epoch</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">show_metric</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+
+
+<p>训练完之后，保存模型和数据，方便下一步的使用。</p>
+<div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s1">&#39;saved/model.tflearn&#39;</span><span class="p">)</span>
+<span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">({</span><span class="s1">&#39;words&#39;</span><span class="p">:</span> <span class="n">words</span><span class="p">,</span> <span class="s1">&#39;classes&#39;</span><span class="p">:</span> <span class="n">classes</span><span class="p">,</span> <span class="s1">&#39;train_x&#39;</span><span class="p">:</span> <span class="n">train_x</span><span class="p">,</span> <span class="s1">&#39;train_y&#39;</span><span class="p">:</span> <span class="n">train_y</span><span class="p">},</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;saved/training_data&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+</pre></div>
+
+
+<h2>构建自动回答模块</h2>
+<p>上面的步骤完成了意图分类模型的训练，我们将在此基础上开发问题回答模块。这个模块将独立于之前的训练模型，这样就避免了反复训练模型。导入之前的模型和数据。注意，模型在导入之前，需要预先定义好模型结构。</p>
+<div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;saved/training_data&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">))</span>
+<span class="n">words</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;words&#39;</span><span class="p">]</span>
+<span class="n">classes</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;classes&#39;</span><span class="p">]</span>
+<span class="n">train_x</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;train_x&#39;</span><span class="p">]</span>
+<span class="n">train_y</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;train_y&#39;</span><span class="p">]</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;intents.json&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">json_data</span><span class="p">:</span>
+    <span class="n">intents</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">json_data</span><span class="p">)</span>
+
+<span class="n">tf</span><span class="o">.</span><span class="n">reset_default_graph</span><span class="p">()</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">input_data</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">[</span><span class="bp">None</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_x</span><span class="p">[</span><span class="mi">0</span><span class="p">])])</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">fully_connected</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">fully_connected</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">fully_connected</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_y</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;softmax&#39;</span><span class="p">)</span>
+<span class="n">net</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">regression</span><span class="p">(</span><span class="n">net</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">tflearn</span><span class="o">.</span><span class="n">DNN</span><span class="p">(</span><span class="n">net</span><span class="p">,</span> <span class="n">tensorboard_dir</span><span class="o">=</span><span class="s1">&#39;saved/tflearn_logs&#39;</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;saved/model.tflearn&#39;</span><span class="p">)</span>
+</pre></div>
+
+
+<p>构建一个预处理函数，将文本转为向量。</p>
+<div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">bow</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">words</span><span class="p">):</span>
+    <span class="n">sentence_words</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">jieba</span><span class="o">.</span><span class="n">cut</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">cut_all</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+    <span class="n">bag</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">words</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">sentence_words</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">words</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">w</span> <span class="o">==</span> <span class="n">s</span><span class="p">:</span>
+                <span class="n">bag</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">bag</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">bow</span><span class="p">(</span><span class="s2">&quot;餐厅营业时间是几点？&quot;</span><span class="p">,</span> <span class="n">words</span><span class="p">))</span>
+</pre></div>
+
+
+<div class="highlight"><pre><span></span>[0 0 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0]
+</pre></div>
+
+
+<p>OK，现在我们可以写判断意图的分类函数了。分类函数将会按照概率的从高到低，返回意图的列表。回答问题的函数，将会挑可能性最高的，从对应地已有回答中随机挑选一个。</p>
+<div class="highlight"><pre><span></span><span class="n">ERROR_THRESHOLD</span> <span class="o">=</span> <span class="mf">0.01</span>
+
+<span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="n">bow</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">words</span><span class="p">)])[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[[</span><span class="n">i</span><span class="p">,</span> <span class="n">r</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">r</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="k">if</span> <span class="n">r</span> <span class="o">&gt;</span> <span class="n">ERROR_THRESHOLD</span><span class="p">]</span>
+    <span class="n">results</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">return_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+        <span class="n">return_list</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">classes</span><span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">return_list</span>
+
+<span class="k">def</span> <span class="nf">reply</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">classify</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">results</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">intents</span><span class="p">[</span><span class="s1">&#39;intents&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="k">print</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;replies&#39;</span><span class="p">]))</span>
+
+        <span class="n">results</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+
+<p>测试分类效果，注意，这里「晚上营业到几点？」并没有在 JSON 文件中定义过，分类器也可以推断出意图。因为模型能从「晚上」「营业」「几点」中推断出该问题的意图是 。</p>
+<div class="highlight"><pre><span></span>&gt;&gt;&gt; classify(&quot;晚上营业到几点&quot;)
+[(&#39;hours&#39;, 0.8909908)]
+&gt;&gt;&gt; reply(&quot;晚上营业到几点&quot;)
+我们营业时间是 9am-9pm
+</pre></div>
+
+
+<p>更多测试：</p>
+<div class="highlight"><pre><span></span>&gt;&gt;&gt; reply(&quot;最近有什么打折活动吗？&quot;)
+本周三酒水饮料自助，会员支付 8 折优惠
+&gt;&gt;&gt; reply(&quot;推荐一些菜吧&quot;)
+罗勒披萨、千层面和海鲜饭
+</pre></div>
+
+
+<h2>添加上下文场景</h2>
+<p>现实中的对话都是有上下文场景的。我们将会为聊天机器人添加一个简单的上下文：当用户问过预定座位的问题后，接下来只要告诉机器人「今天」，机器人就会结合先前的意图，推断出用户想要「在今天预定座位」。该功能需要借助状态机来实现 - 在程序中保存用户的意图状态，并在新的意图出现时用来做推断。另外，状态是有时间限制的，这里，我们默认用户在开启新的一段对话时，状态被重新初始化。</p>
+<p>更新 JSON 文件中的 greeting、book、today 三个意图如下：</p>
+<div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;greeting&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;phrases&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;你好&quot;</span><span class="p">,</span> <span class="s2">&quot;在不&quot;</span><span class="p">,</span> <span class="s2">&quot;有人在不&quot;</span><span class="p">,</span> <span class="s2">&quot;Hello&quot;</span><span class="p">,</span> <span class="s2">&quot;老板好&quot;</span><span class="p">],</span>
+  <span class="nt">&quot;replies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;您好，有什么可以帮您&quot;</span><span class="p">,</span> <span class="s2">&quot;很高兴见到您&quot;</span><span class="p">,</span> <span class="s2">&quot;欢迎来到本店&quot;</span><span class="p">],</span>
+  <span class="nt">&quot;context_set&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span>
+<span class="p">}</span><span class="err">,</span>
+<span class="p">{</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;book&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;phrases&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;我能订餐吗&quot;</span><span class="p">,</span> <span class="s2">&quot;我想预定座位&quot;</span><span class="p">,</span> <span class="s2">&quot;你们支持预定座位吗&quot;</span><span class="p">],</span>
+  <span class="nt">&quot;replies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;请问您定今天的座位还是本周的？&quot;</span><span class="p">,</span> <span class="s2">&quot;可以，请问是今天还是明天的？&quot;</span><span class="p">],</span>
+  <span class="nt">&quot;context_set&quot;</span><span class="p">:</span> <span class="s2">&quot;bookday&quot;</span>
+<span class="p">}</span><span class="err">,</span>
+<span class="p">{</span>
+  <span class="nt">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;today&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;phrases&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;今天&quot;</span><span class="p">],</span>
+  <span class="nt">&quot;replies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;OK，正在为您接通本店电话，请稍等。&quot;</span><span class="p">,</span> <span class="s2">&quot;好的，我们将为您拨通门店电话，预定座位。&quot;</span><span class="p">],</span>
+  <span class="nt">&quot;context_filter&quot;</span><span class="p">:</span> <span class="s2">&quot;bookday&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>更新推断函数：</p>
+<div class="highlight"><pre><span></span><span class="n">context</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;context_set&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>
+
+<span class="k">def</span> <span class="nf">reply</span><span class="p">(</span><span class="n">sentence</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">classify</span><span class="p">(</span><span class="n">sentence</span><span class="p">)</span>
+    <span class="k">while</span> <span class="n">results</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">intents</span><span class="p">[</span><span class="s1">&#39;intents&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">i</span><span class="p">[</span><span class="s1">&#39;intent&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="s2">&quot;context_set&quot;</span> <span class="ow">in</span> <span class="n">i</span><span class="p">:</span>
+                    <span class="n">context</span><span class="p">[</span><span class="s2">&quot;context_set&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">i</span><span class="p">[</span><span class="s2">&quot;context_set&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="s2">&quot;context_filter&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">i</span> <span class="ow">or</span> \
+                        <span class="p">(</span><span class="s2">&quot;context_filter&quot;</span> <span class="ow">in</span> <span class="n">i</span> <span class="ow">and</span> <span class="n">i</span><span class="p">[</span><span class="s2">&quot;context_filter&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">context</span><span class="p">[</span><span class="s2">&quot;context_set&quot;</span><span class="p">]):</span>
+                    <span class="k">return</span> <span class="k">print</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">i</span><span class="p">[</span><span class="s1">&#39;replies&#39;</span><span class="p">]))</span>
+
+        <span class="n">results</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+
+
+<p>测试一下上下文场景是否生效：</p>
+<div class="highlight"><pre><span></span>&gt;&gt;&gt; reply(&quot;我能订餐吗&quot;)
+可以的，请问是今天还是明天的？（context）
+&gt;&gt;&gt; reply(&quot;今天&quot;)
+OK，正在为您接通本店电话，请稍等。
+</pre></div>
+
+
+<p>当用户发起一段新的对话（Hello 会清空 context），会发现上下文不一样，回复不同。</p>
+<div class="highlight"><pre><span></span>&gt;&gt;&gt; classify(&quot;Hello&quot;)
+[(&#39;greeting&#39;, 0.9974165)]
+&gt;&gt;&gt; classify(&quot;今天&quot;)
+[(&#39;today&#39;, 0.9824814), (&#39;hours&#39;, 0.032728897)]
+&gt;&gt;&gt; reply(&quot;今天&quot;)
+我们营业时间是 9am-9pm
+</pre></div>
+
+
+<p>至此，所有的工作已经完成。未来可以为它添加更丰富的上下文场景和功能。Enjoy！</p>
+</div>
+
+
+      </div>
+
+      <footer>
+        <p>
+          © 2015-2018 mult1vac
+        </p>
+      </footer>
+    </div>
+  </body>
+</html>
