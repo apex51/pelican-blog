@@ -1,39 +1,54 @@
 <!DOCTYPE html>
-<html lang="cn">
+<html>
+    <head>
+        <title>Write-up for Liberty Mutual's Hazard Prediction - FROM A MAKER</title>
+        <meta charset="utf-8" />
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="./theme/static/css/style.css" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <script type="text/x-mathjax-config">    
+            MathJax.Hub.Config({
+                config: ['MMLorHTML.js'],
+                TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+                extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
+                showMathMenu: true,
+                messageStyle: 'normal',
+                tex2jax: {
+                    inlineMath: [ ['$','$'] ],
+                    displayMath: [ ['$$','$$'] ],
+                    processEscapes: true,
+                    preview: 'TeX',
+                },
+                "CommonHTML": {}
+            });    
+        </script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
+    </head>
 
-  <head>
-    <meta charset="utf-8" />
-    <meta name="author" content="mult1vac">
-    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
-  </head>
-
-  <body>
-    <div class="site">
-      <header>
-        <ul class="nav">
-          <li><a class="site-name" href="">数据之下</a></li>
-            <li><a class="float-right" href="/pages/about.html">关于</a></li>
-            <li><a class="float-right" href="/index.html">文章</a></li>
-        </ul>
-      </header>
-
-      <div id="content">
-
-<div class="post">
-  <h1 class="posttitle">
-    Write-up for Liberty Mutual's Hazard Prediction
-  </h1>
-
-  <div class="postinfo">
-    <p class="published" title="2015-09-05T23:13:47+08:00">
-      2015-09-05
-    </p>
-  </div>
-</div>
-
-<div class="article">
-  <p>I'd say I did not bad (LB top25%) in <a href="https://www.kaggle.com/c/liberty-mutual-group-property-inspection-prediction">this game</a> and still have long way to go. Since for what I've done there are pros and cons, it's time to make a summing-up.</p>
+    <body id="index" class="archive">
+        <div class="container">
+            <div class="header">
+                <ul class="nav nav-pills pull-right">
+                    <li class=""><a href=".">Home</a></li>
+                        <li><a href="pages/about.html">About</a></li>
+                    <li><a href="./archives.html">Archives</a></li>
+                </ul>
+                <h2 class="text-muted"><a href=".">FROM A MAKER</a></h3>
+				<!-- <h2 class="text-muted"></h2> -->
+             </div>
+<section id="content" class="article content">
+  <header>
+    <h2 class="entry-title">
+      <a href="./write-up-for-liberty-mutuals-hazard-prediction.html" rel="bookmark"
+         title="Permalink to Write-up for Liberty Mutual's Hazard Prediction">Write-up for Liberty Mutual's Hazard Prediction</a></h2>
+ 
+  </header>
+  
+     
+  <div class="entry-content">
+    <p>I'd say I did not bad (LB top25%) in <a href="https://www.kaggle.com/c/liberty-mutual-group-property-inspection-prediction">this game</a> and still have long way to go. Since for what I've done there are pros and cons, it's time to make a summing-up.</p>
 <p>Liberty Mutual Insurance provides wide range of insurance products. For its home insurance service, newly insured properties need further home inspection to make sure the property is one Liberty Mutual wants to insure. Inspection includes key attributes of the property like the foundation, roof, windows and siding.</p>
 <!--more-->
 
@@ -44,10 +59,11 @@
 <li>First, only the order of the prediction matters. After submission, predictions are ordered from largest to smallest. Then we only focus on the corresponding real values and calculate: for the top x% of predictions, what percent of real values are cumulated. A Lorentz curve is drawn then.</li>
 <li>Second, there is a "perfect" curve, your model's curve and a "null" model's curve. Perfect curve assumes the order of predictions are all correct. A null model means a model which generates random predictions. So ideally it will generate a diagonal Lorentz curve. The area between your curve and the diagonal curve is the Gini coefficient, then devided by the perfect model's Gini coefficient gets the normalized one. Python code is given in the end.</li>
 </ul>
-<div  align="center">
+<!-- <div  align="center">
 {% img center {filename}/images/2015-09-05/gini.png gini %}
-</div>
+</div> -->
 
+<p><img alt="normal" src="images/2015-09-05/gini.png"></p>
 <h3>My Solution</h3>
 <h4>Features</h4>
 <p>This competition's features consist of numeric ones and categorical ones. Since they are all anonymous, explicit feature engineering due to their meanings seems not possible.</p>
@@ -79,10 +95,11 @@
 </ul>
 <h4>Ensemble</h4>
 <p>I used weighted averaging to ensemble different models. The tool I took is <a href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fmin_cobyla.html">Scipy's COBYLA</a> to combine 5-fold holdout predictions from each model. I find it's handy to keep k-fold's index because new models can be easily thrown into the ensemble afterwards. The final weights of selected models are as follows.</p>
-<div  align="center">
+<!-- <div  align="center">
 {% img center {filename}/images/2015-09-05/ensemble.png ensemble %}
-</div>
+</div> -->
 
+<p><img alt="normal" src="images/2015-09-05/ensemble.png"></p>
 <h3>Lesson Learnt</h3>
 <p>I read some of the top LB player's solutions after this competition. I would have achieve better results if I adopted one of these good ideas. Anyway, the learning goes on. The following two methods are found to be quite useful in this game and new to me.</p>
 <h4>Poisson Regression</h4>
@@ -94,9 +111,9 @@
 <p>I made it clear how Poisson Regression works after reading some references given in the end of the article. It can be understood using the theory of the Exponential Family and Generalized Linear Models. The Poisson distribution parameterized by $\lambda$ is:</p>
 <p>$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} }$$</p>
 <p>Rewrite the distribution as:</p>
-<p>$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} } = \frac{1} { {y!} }\exp (y\log\lambda  - \lambda )$$</p>
+<p>$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} } = \frac{1} {y!}\exp (y\log\lambda  - \lambda )$$</p>
 <p>Comparing with the standard form of the exponential family we can get:</p>
-<p>$$b(y) = \frac{1}{ {y!} } \ \eta  = \log \lambda \ T(y) = y \ a(\eta ) = {e^\eta }$$</p>
+<p>$$b(y) = \frac {1} { {y!} } \ \eta  = \log \lambda \ T(y) = y \ a(\eta ) = {e^\eta }$$</p>
 <p>Using Generalized Linear Model's constructing rule, the hyposis of Poisson Regression can be written as follows (the first equality uses GLM's second assumption and the third equality uses the fact Poisson distribution's mean is $\lambda$)</p>
 <p>$${h_\theta }(x) = E[T(y)\left| x \right.] = E[y\left| x \right.] = \lambda  = \exp \eta  = \exp ({\theta ^T}x)$$</p>
 <p>So this model outputs variable distribution's expectation. The loss funtion of an example $({x_i},{y_i})$ can be derived from its negative log-likelihood. The log-likelihood is defined as:</p>
@@ -126,16 +143,23 @@
 <li><a href="https://www.kddcup2015.com/information-winners.html">KDD CUP 2015 winner solution: Intercontinental Ensemble:</a> another great ensemble using 3-level stacking.</li>
 <li><a href="http://cs229.stanford.edu/">Stanford CS229 - Generalized Linear Models</a></li>
 </ul>
-</div>
-
-
-      </div>
-
-      <footer>
-        <p>
-          © 2015-2018 mult1vac
-        </p>
-      </footer>
-    </div>
-  </body>
+  </div><!-- /.entry-content -->
+   <footer class="post-info text-muted">
+    Posted on <abbr class="published" title="2015-09-05T23:13:47+08:00">
+      Sat 05 September 2015
+    </abbr>
+    <address class="vcard author">
+      by <a class="url fn" href="./author/tester.html">tester</a>
+    </address> in <a href="./category/kaggle.html">kaggle</a> Tagged <a href="./tag/kaggle.html">kaggle </a><a href="./tag/poisson.html">poisson </a><a href="./tag/ensembling.html">ensembling </a><a href="./tag/stacking.html">stacking </a><a href="./tag/insurance.html">insurance </a><a href="./tag/gini.html">gini </a>  </footer><!-- /.post-info -->
+</section>
+            <footer id="contentinfo" class="footer">
+                    <nav class="pull-right bottom-nav">
+                        <a href="/None">RSS</a>
+                    </nav>
+                    <address id="about" class="vcard body">
+                    &copy; <a href=".">FROM A MAKER</a> Proudly powered by <a href="http://getpelican.com/">Pelican</a>
+                    </address><!-- /#about -->
+            </footer><!-- /#contentinfo -->
+        </div><!-- container -->
+    </body>
 </html>

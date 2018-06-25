@@ -1,46 +1,62 @@
 <!DOCTYPE html>
-<html lang="cn">
+<html>
+    <head>
+        <title>My solution to Kaggle's Otto Group Challenge - FROM A MAKER</title>
+        <meta charset="utf-8" />
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="./theme/static/css/style.css" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <script type="text/x-mathjax-config">    
+            MathJax.Hub.Config({
+                config: ['MMLorHTML.js'],
+                TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+                extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
+                showMathMenu: true,
+                messageStyle: 'normal',
+                tex2jax: {
+                    inlineMath: [ ['$','$'] ],
+                    displayMath: [ ['$$','$$'] ],
+                    processEscapes: true,
+                    preview: 'TeX',
+                },
+                "CommonHTML": {}
+            });    
+        </script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
+    </head>
 
-  <head>
-    <meta charset="utf-8" />
-    <meta name="author" content="mult1vac">
-    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
-  </head>
-
-  <body>
-    <div class="site">
-      <header>
-        <ul class="nav">
-          <li><a class="site-name" href="">数据之下</a></li>
-            <li><a class="float-right" href="/pages/about.html">关于</a></li>
-            <li><a class="float-right" href="/index.html">文章</a></li>
-        </ul>
-      </header>
-
-      <div id="content">
-
-<div class="post">
-  <h1 class="posttitle">
-    My solution to Kaggle's Otto Group Challenge
-  </h1>
-
-  <div class="postinfo">
-    <p class="published" title="2015-08-03T01:53:09+08:00">
-      2015-08-03
-    </p>
-  </div>
-</div>
-
-<div class="article">
-  <p>This solution is for Kaggle's <strong><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge">Otto Product Classification competition</a></strong>. The competition's goal was to classify items into 9 product categories based on 93 anonymous count features. I recently handed on this competition for practice purposes. Before this, I played with some kaggle 101 games (<a href="https://www.kaggle.com/c/street-view-getting-started-with-julia">Julia</a>, <a href="https://www.kaggle.com/c/titanic">Titanic</a>, etc). My personal goal in doing this was to learn how to tackle on a real kaggle challenge.</p>
+    <body id="index" class="archive">
+        <div class="container">
+            <div class="header">
+                <ul class="nav nav-pills pull-right">
+                    <li class=""><a href=".">Home</a></li>
+                        <li><a href="pages/about.html">About</a></li>
+                    <li><a href="./archives.html">Archives</a></li>
+                </ul>
+                <h2 class="text-muted"><a href=".">FROM A MAKER</a></h3>
+				<!-- <h2 class="text-muted"></h2> -->
+             </div>
+<section id="content" class="article content">
+  <header>
+    <h2 class="entry-title">
+      <a href="./my-solution-to-kaggles-otto-group-challenge.html" rel="bookmark"
+         title="Permalink to My solution to Kaggle's Otto Group Challenge">My solution to Kaggle's Otto Group Challenge</a></h2>
+ 
+  </header>
+  
+     
+  <div class="entry-content">
+    <p>This solution is for Kaggle's <strong><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge">Otto Product Classification competition</a></strong>. The competition's goal was to classify items into 9 product categories based on 93 anonymous count features. I recently handed on this competition for practice purposes. Before this, I played with some kaggle 101 games (<a href="https://www.kaggle.com/c/street-view-getting-started-with-julia">Julia</a>, <a href="https://www.kaggle.com/c/titanic">Titanic</a>, etc). My personal goal in doing this was to learn how to tackle on a real kaggle challenge.</p>
 <p>My final model ran 0.41922 on private LB. It was built in two levels using stacking. Predictions in the first level were treated as meta features and were combined with raw data to feed into the second level, known as meta learner. The architecture is given below. Next I will go through the single models I've tried in level 1 then the ensembling methods in level 2.</p>
 <!--more-->
 
-<div  align="center">
+<!-- <div  align="center">
 {% img {filename}/images/2015-08-03/arch.png architecture of the model %}
-</div>
+</div> -->
 
+<p><img alt="normal" src="images/2015-08-03/arch.png"></p>
 <h2>Single Models</h2>
 <h3>Random Forest</h3>
 <p>Random forest is always the first choice in kaggle's classification problems. It's unpicky, fast and guarantees a fairly good result. Extra trees is another good choice to start with. I tried RF and ET on raw data and ti-idf transformed data by 5-fold CV. The best models I got were:</p>
@@ -105,10 +121,11 @@
 <li>Stacking: <code>0.41777 (public LB), 0.41922 (private LB)</code></li>
 </ul>
 <p>Base learners' importance can be estimated by xgb's feature importance. I drew the relative model importance map below. It looks like the meta features did a good contribution to the result.</p>
-<div  align="center">
+<!-- <div  align="center">
 {% img center {filename}/images/2015-08-03/barh.png base model importance %}
-</div>
+</div> -->
 
+<p><img alt="normal" src="images/2015-08-03/barh.png"></p>
 <h2>Conclusion</h2>
 <p>Due to limited time and poor skills of mine, I didn't polish my model to satisfaction. And some methods I'd love to try yet didn't use in this game are:</p>
 <ul>
@@ -122,16 +139,23 @@
 <li><a href="https://www.kaggle.com/c/otto-group-product-classification-challenge/forums/t/13016/neural-nets-in-sklearn/68544#post68544">Starting Guide with Lasagne</a></li>
 <li><a href="https://www.kaggle.com/tqchen/otto-group-product-classification-challenge/understanding-xgboost-model-on-otto-data">Understanding XGBoost Model on Otto Dataset</a></li>
 </ul>
-</div>
-
-
-      </div>
-
-      <footer>
-        <p>
-          © 2015-2018 mult1vac
-        </p>
-      </footer>
-    </div>
-  </body>
+  </div><!-- /.entry-content -->
+   <footer class="post-info text-muted">
+    Posted on <abbr class="published" title="2015-08-03T01:53:09+08:00">
+      Mon 03 August 2015
+    </abbr>
+    <address class="vcard author">
+      by <a class="url fn" href="./author/tester.html">tester</a>
+    </address> in <a href="./category/kaggle.html">kaggle</a> Tagged <a href="./tag/kaggle.html">kaggle </a><a href="./tag/ensembling.html">ensembling </a><a href="./tag/xgboost.html">xgboost </a><a href="./tag/lasagne.html">lasagne </a><a href="./tag/nolearn.html">nolearn </a>  </footer><!-- /.post-info -->
+</section>
+            <footer id="contentinfo" class="footer">
+                    <nav class="pull-right bottom-nav">
+                        <a href="/None">RSS</a>
+                    </nav>
+                    <address id="about" class="vcard body">
+                    &copy; <a href=".">FROM A MAKER</a> Proudly powered by <a href="http://getpelican.com/">Pelican</a>
+                    </address><!-- /#about -->
+            </footer><!-- /#contentinfo -->
+        </div><!-- container -->
+    </body>
 </html>

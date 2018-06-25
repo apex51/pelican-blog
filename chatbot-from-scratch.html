@@ -1,40 +1,55 @@
 <!DOCTYPE html>
-<html lang="cn">
+<html>
+    <head>
+        <title>Chatbot 2 - 自己动手写带场景感知的虚拟助手 - FROM A MAKER</title>
+        <meta charset="utf-8" />
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="./theme/static/css/style.css" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <script type="text/x-mathjax-config">    
+            MathJax.Hub.Config({
+                config: ['MMLorHTML.js'],
+                TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+                extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
+                showMathMenu: true,
+                messageStyle: 'normal',
+                tex2jax: {
+                    inlineMath: [ ['$','$'] ],
+                    displayMath: [ ['$$','$$'] ],
+                    processEscapes: true,
+                    preview: 'TeX',
+                },
+                "CommonHTML": {}
+            });    
+        </script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
+    </head>
 
-  <head>
-    <meta charset="utf-8" />
-    <meta name="author" content="mult1vac">
-    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
-  </head>
-
-  <body>
-    <div class="site">
-      <header>
-        <ul class="nav">
-          <li><a class="site-name" href="">数据之下</a></li>
-            <li><a class="float-right" href="/pages/about.html">关于</a></li>
-            <li><a class="float-right" href="/index.html">文章</a></li>
-        </ul>
-      </header>
-
-      <div id="content">
-
-<div class="post">
-  <h1 class="posttitle">
-    Chatbot 2 - 自己动手写带场景感知的虚拟助手
-  </h1>
-
-  <div class="postinfo">
-    <p class="published" title="2018-06-20T23:06:08+08:00">
-      2018-06-20
-    </p>
-  </div>
-</div>
-
-<div class="article">
-  <p><img alt="" src="/images/5/context.jpg"></p>
-<p>接上一篇<a href="multivac.com/build-chatbot-in-ten-minutes.html">Chatbot 1 - 使用 Dialogflow 十分钟搭建虚拟助手</a>，这次我们将不再依赖 Dialogflow 提供的功能，而是从零到一手写代码，探索聊天机器人的基本工作原理，并搭建一个意式餐厅的在线客服机器人。</p>
+    <body id="index" class="archive">
+        <div class="container">
+            <div class="header">
+                <ul class="nav nav-pills pull-right">
+                    <li class=""><a href=".">Home</a></li>
+                        <li><a href="pages/about.html">About</a></li>
+                    <li><a href="./archives.html">Archives</a></li>
+                </ul>
+                <h2 class="text-muted"><a href=".">FROM A MAKER</a></h3>
+				<!-- <h2 class="text-muted"></h2> -->
+             </div>
+<section id="content" class="article content">
+  <header>
+    <h2 class="entry-title">
+      <a href="./chatbot-from-scratch.html" rel="bookmark"
+         title="Permalink to Chatbot 2 - 自己动手写带场景感知的虚拟助手">Chatbot 2 - 自己动手写带场景感知的虚拟助手</a></h2>
+ 
+  </header>
+  
+     
+  <div class="entry-content">
+    <p><img alt="normal" src="./images/5/context.jpg"></p>
+<p>接上一篇 <a href="multivac.com/build-chatbot-in-ten-minutes.html">Chatbot 1 - 使用 Dialogflow 十分钟搭建虚拟助手</a>，这次我们将不再依赖 Dialogflow 提供的功能，而是从零到一手写代码，探索聊天机器人的基本工作原理，并搭建一个意式餐厅的在线客服机器人。</p>
 <h2>训练对话意图</h2>
 <p>上篇中，我们在 Dialogflow 中的 Intent 中设置了一系列的对话，作为模型学习的样本。这里我们同样需要为机器人构建不同的 Intent 可能遇到的问题和回答，以提供给神经网络模型学习，配置的内容通过 JSON 格式保存。下面示例展示「推荐菜单」这个意图的定义。完整版的 JSON 文件在<a href="https://github.com/apex51/my-chatbot-code/blob/master/chatbot-2/intents.json">这里</a>。</p>
 <div class="highlight"><pre><span></span><span class="p">{</span>
@@ -279,24 +294,33 @@ OK，正在为您接通本店电话，请稍等。
 <p>当用户发起一段新的对话（Hello 会清空 context），会发现上下文不一样，回复不同。</p>
 <div class="highlight"><pre><span></span>&gt;&gt;&gt; classify(&quot;Hello&quot;)
 [(&#39;greeting&#39;, 0.9974165)]
+
 &gt;&gt;&gt; classify(&quot;今天&quot;)
 [(&#39;today&#39;, 0.9824814), (&#39;hours&#39;, 0.032728897)]
+
 &gt;&gt;&gt; reply(&quot;今天&quot;)
 我们营业时间是 9am-9pm
 </pre></div>
 
 
 <p>至此，所有的工作已经完成。未来可以为它添加更丰富的上下文场景和功能。Enjoy！</p>
-</div>
-
-
-      </div>
-
-      <footer>
-        <p>
-          © 2015-2018 mult1vac
-        </p>
-      </footer>
-    </div>
-  </body>
+  </div><!-- /.entry-content -->
+   <footer class="post-info text-muted">
+    Posted on <abbr class="published" title="2018-06-20T23:06:08+08:00">
+      Wed 20 June 2018
+    </abbr>
+    <address class="vcard author">
+      by <a class="url fn" href="./author/mult1vac.html">mult1vac</a>
+    </address> in <a href="./category/ren-gong-zhi-neng.html">人工智能</a> Tagged <a href="./tag/ai.html">AI </a><a href="./tag/bot.html">bot </a><a href="./tag/chatbot.html">chatbot </a>  </footer><!-- /.post-info -->
+</section>
+            <footer id="contentinfo" class="footer">
+                    <nav class="pull-right bottom-nav">
+                        <a href="/None">RSS</a>
+                    </nav>
+                    <address id="about" class="vcard body">
+                    &copy; <a href=".">FROM A MAKER</a> Proudly powered by <a href="http://getpelican.com/">Pelican</a>
+                    </address><!-- /#about -->
+            </footer><!-- /#contentinfo -->
+        </div><!-- container -->
+    </body>
 </html>

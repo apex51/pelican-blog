@@ -1,36 +1,56 @@
 <!DOCTYPE html>
-<html lang="cn">
+<html>
+    <head>
+        <title>FROM A MAKER - Authors</title>
+        <meta charset="utf-8" />
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="./theme/static/css/style.css" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <script type="text/x-mathjax-config">    
+            MathJax.Hub.Config({
+                config: ['MMLorHTML.js'],
+                TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+                extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
+                showMathMenu: true,
+                messageStyle: 'normal',
+                tex2jax: {
+                    inlineMath: [ ['$','$'] ],
+                    displayMath: [ ['$$','$$'] ],
+                    processEscapes: true,
+                    preview: 'TeX',
+                },
+                "CommonHTML": {}
+            });    
+        </script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
+    </head>
 
-  <head>
-    <meta charset="utf-8" />
-    <meta name="author" content="mult1vac">
-    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
-  </head>
+    <body id="index" class="archive">
+        <div class="container">
+            <div class="header">
+                <ul class="nav nav-pills pull-right">
+                    <li class=""><a href=".">Home</a></li>
+                        <li><a href="pages/about.html">About</a></li>
+                    <li><a href="./archives.html">Archives</a></li>
+                </ul>
+                <h2 class="text-muted"><a href=".">FROM A MAKER</a></h3>
+				<!-- <h2 class="text-muted"></h2> -->
+             </div>
+    <h1>Authors on FROM A MAKER</h1>
 
-  <body>
-    <div class="site">
-      <header>
-        <ul class="nav">
-          <li><a class="site-name" href="">数据之下</a></li>
-            <li><a class="float-right" href="/pages/about.html">关于</a></li>
-            <li><a class="float-right" href="/index.html">文章</a></li>
-        </ul>
-      </header>
-
-      <div id="content">
-    <h1>Authors on 数据之下</h1>
-
-    <ul>        <li><a href="/author/mult1vac.html">mult1vac</a> (8)</li>
-        <li><a href="/author/tester.html">tester</a> (3)</li>
+    <ul>        <li><a href="./author/mult1vac.html">mult1vac</a> (7)</li>
+        <li><a href="./author/tester.html">tester</a> (2)</li>
     </ul>
-      </div>
-
-      <footer>
-        <p>
-          © 2015-2018 mult1vac
-        </p>
-      </footer>
-    </div>
-  </body>
+            <footer id="contentinfo" class="footer">
+                    <nav class="pull-right bottom-nav">
+                        <a href="/None">RSS</a>
+                    </nav>
+                    <address id="about" class="vcard body">
+                    &copy; <a href=".">FROM A MAKER</a> Proudly powered by <a href="http://getpelican.com/">Pelican</a>
+                    </address><!-- /#about -->
+            </footer><!-- /#contentinfo -->
+        </div><!-- container -->
+    </body>
 </html>
