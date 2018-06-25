@@ -6,8 +6,10 @@ Tags: AI, bot, chatbot
 Slug: chatbot-startups-abroad
 Authors: mult1vac
 Status: published
+Summary: 一个AI, http://www.yige.ai/, 类型：ToB、ToD, 领域：Bot 创建平台, 位置：北京, 由世纪佳缘开发的免费创建虚拟对话机器人（Bot）应用的在线平台。
 
-![]({filename}/images/3/startup.jpeg)
+
+![normal]({filename}/images/3/startup.jpeg)
 
 ### [AdmitHub](https://www.admithub.com/)
 

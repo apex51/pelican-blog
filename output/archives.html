@@ -1,51 +1,69 @@
 <!DOCTYPE html>
-<html lang="cn">
+<html>
+    <head>
+        <title>Archives</title>
+        <meta charset="utf-8" />
+        <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet" />
+        <link href="./theme/static/css/style.css" rel="stylesheet" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <script type="text/x-mathjax-config">    
+            MathJax.Hub.Config({
+                config: ['MMLorHTML.js'],
+                TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+                extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js'],
+                showMathMenu: true,
+                messageStyle: 'normal',
+                tex2jax: {
+                    inlineMath: [ ['$','$'] ],
+                    displayMath: [ ['$$','$$'] ],
+                    processEscapes: true,
+                    preview: 'TeX',
+                },
+                "CommonHTML": {}
+            });    
+        </script>
+        <script type="text/javascript"
+            src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+        </script>
+    </head>
 
-  <head>
-    <meta charset="utf-8" />
-    <meta name="author" content="mult1vac">
-    <link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet" type="text/css">
-    <link rel="stylesheet" type="text/css" href="/theme/css/styles.css"/>
-  </head>
-
-  <body>
-    <div class="site">
-      <header>
-        <ul class="nav">
-          <li><a class="site-name" href="">数据之下</a></li>
-            <li><a class="float-right" href="/pages/about.html">关于</a></li>
-            <li><a class="float-right" href="/index.html">文章</a></li>
-        </ul>
-      </header>
-
-      <div id="content">
-<h1>Archives for 数据之下</h1>
+    <body id="index" class="archive">
+        <div class="container">
+            <div class="header">
+                <ul class="nav nav-pills pull-right">
+                    <li class=""><a href=".">Home</a></li>
+                        <li><a href="pages/about.html">About</a></li>
+                    <li class="active"><a href="./archives.html">Archives</a></li>
+                </ul>
+                <h2 class="text-muted"><a href=".">FROM A MAKER</a></h3>
+				<!-- <h2 class="text-muted"></h2> -->
+             </div>
 
 <dl>
-    <dt>Wed 20 June 2018</dt>
-    <dd><a href="/chatbot-from-scratch.html">Chatbot 2 - 自己动手写带场景感知的虚拟助手</a></dd>
-    <dt>Fri 15 June 2018</dt>
-    <dd><a href="/chatbot-startups-domestic.html">国内 Chatbot 初创公司收集</a></dd>
-    <dt>Fri 15 June 2018</dt>
-    <dd><a href="/chatbot-startups-abroad.html">国外 Chatbot 初创公司收集</a></dd>
-    <dt>Tue 12 June 2018</dt>
-    <dd><a href="/build-chatbot-in-ten-minutes.html">Chatbot 1 - 使用 Dialogflow 十分钟搭建虚拟助手</a></dd>
-    <dt>Fri 08 June 2018</dt>
-    <dd><a href="/why-should-i-create.html">为什么我应该开始创作？</a></dd>
-    <dt>Sat 05 September 2015</dt>
-    <dd><a href="/write-up-for-liberty-mutuals-hazard-prediction.html">Write-up for Liberty Mutual's Hazard Prediction</a></dd>
-    <dt>Mon 03 August 2015</dt>
-    <dd><a href="/my-solution-to-kaggles-otto-group-challenge.html">My solution to Kaggle's Otto Group Challenge</a></dd>
-    <dt>Fri 08 August 2014</dt>
-    <dd><a href="/notes-on-basic-support-vector-machines.html">Notes on Basic Support Vector Machines</a></dd>
+  
+            <h3><a href="./2018"  class="text">Archive for 2018</a></h3>
+            <ul class="archive-list">
+                <li><span class="text-muted">Wed 20 June 2018 &raquo; </span><a href="./chatbot-from-scratch.html">Chatbot 2 - 自己动手写带场景感知的虚拟助手</a></li>   
+                <li><span class="text-muted">Fri 15 June 2018 &raquo; </span><a href="./chatbot-startups-domestic.html">国内 Chatbot 初创公司收集</a></li>   
+                <li><span class="text-muted">Fri 15 June 2018 &raquo; </span><a href="./chatbot-startups-abroad.html">国外 Chatbot 初创公司收集</a></li>   
+                <li><span class="text-muted">Tue 12 June 2018 &raquo; </span><a href="./build-chatbot-in-ten-minutes.html">Chatbot 1 - 使用 Dialogflow 十分钟搭建虚拟助手</a></li>   
+                <li><span class="text-muted">Fri 08 June 2018 &raquo; </span><a href="./why-should-i-create.html">为什么我应该开始创作？</a></li>   
+     </ul>
+  
+            <h3><a href="./2015"  class="text">Archive for 2015</a></h3>
+            <ul class="archive-list">
+                <li><span class="text-muted">Sat 05 September 2015 &raquo; </span><a href="./write-up-for-liberty-mutuals-hazard-prediction.html">Write-up for Liberty Mutual's Hazard Prediction</a></li>   
+                <li><span class="text-muted">Mon 03 August 2015 &raquo; </span><a href="./my-solution-to-kaggles-otto-group-challenge.html">My solution to Kaggle's Otto Group Challenge</a></li>   
+     </ul>
 </dl>
-      </div>
-
-      <footer>
-        <p>
-          © 2015-2018 mult1vac
-        </p>
-      </footer>
-    </div>
-  </body>
+            <footer id="contentinfo" class="footer">
+                    <nav class="pull-right bottom-nav">
+                        <a href="/None">RSS</a>
+                    </nav>
+                    <address id="about" class="vcard body">
+                    &copy; <a href=".">FROM A MAKER</a> Proudly powered by <a href="http://getpelican.com/">Pelican</a>
+                    </address><!-- /#about -->
+            </footer><!-- /#contentinfo -->
+        </div><!-- container -->
+    </body>
 </html>

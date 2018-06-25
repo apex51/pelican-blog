@@ -6,8 +6,11 @@ Tags: AI, bot, chatbot
 Slug: chatbot-startups-domestic
 Authors: mult1vac
 Status: published
+Summary: 一份不完全清单，关于国内聊天机器人公司调研。发现国内和国外关注的点完全不同，国内更喜欢做大而全的「解决方案」，国外更喜欢做细分市场。在我看来，国内的 Chatbot 公司更加无趣一点，缺乏一些想象力。但 business is business，「有趣」并不是公司主要的关注点，这条赛道还有精彩的角逐。
 
-![]({filename}/images/4/startup2.jpeg)
+![normal]({filename}/images/4/startup2.jpeg)
+
+一份不完全清单，关于国内聊天机器人公司调研。发现国内和国外关注的点完全不同，国内更喜欢做大而全的「解决方案」，国外更喜欢做细分市场。在我看来，国内的 Chatbot 公司更加无趣一点，缺乏一些想象力。但 business is business，「有趣」并不是公司主要的关注点，这条赛道还有精彩的角逐。
 
 ### [一个AI](http://www.yige.ai/)
 

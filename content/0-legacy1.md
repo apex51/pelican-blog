@@ -4,8 +4,9 @@ Modified: 2015-08-03 01:53:09
 Category: kaggle
 Tags: kaggle, ensembling, xgboost, lasagne, nolearn
 Authors: tester, mult1vac
-Summary: My solution to Kaggle's Otto Group Challenge
 Status: published
+Summary: ![index](images/2015-08-03/arch.png) This solution is for Kaggle's Otto Product Classification competition. The competition's goal was to classify items into 9 product categories based on 93 anonymous count features. I recently handed on this competition for practice purposes. Before this, I played with some kaggle 101 games like Julia, Titanic, etc. My personal goal in doing this was to learn how to tackle on a real kaggle challenge.
+
 
 
 This solution is for Kaggle's **[Otto Product Classification competition][1]**. The competition's goal was to classify items into 9 product categories based on 93 anonymous count features. I recently handed on this competition for practice purposes. Before this, I played with some kaggle 101 games ([Julia][2], [Titanic][3], etc). My personal goal in doing this was to learn how to tackle on a real kaggle challenge.
@@ -14,9 +15,10 @@ My final model ran 0.41922 on private LB. It was built in two levels using stack
 
 <!--more-->
 
-<div  align="center">
+<!-- <div  align="center">
 {% img {filename}/images/2015-08-03/arch.png architecture of the model %}
-</div>
+</div> -->
+![normal](images/2015-08-03/arch.png)
 
 ## Single Models
 
@@ -98,9 +100,10 @@ Combining xgb and nn by averaging gave:
 
 Base learners' importance can be estimated by xgb's feature importance. I drew the relative model importance map below. It looks like the meta features did a good contribution to the result.
 
-<div  align="center">
+<!-- <div  align="center">
 {% img center {filename}/images/2015-08-03/barh.png base model importance %}
-</div>
+</div> -->
+![normal](images/2015-08-03/barh.png)
 
 ## Conclusion
 

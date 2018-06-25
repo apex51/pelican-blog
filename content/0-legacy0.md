@@ -5,7 +5,7 @@ Category: math
 Tags: math
 Authors: tester, mult1vac
 Summary: Notes on Basic Support Vector Machines
-Status: published
+Status: draft
 
 
 Support vector classifier (or regressor) is one of the "*off-the-shelf*" machine learning tools often used in daily tasks. Its theory is highly developed now and quite interesting to study. 

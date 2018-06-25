@@ -4,14 +4,14 @@ from __future__ import unicode_literals
 from datetime import datetime
 
 AUTHOR = 'mult1vac'
-SITENAME = '数据之下'
+SITENAME = 'FROM A MAKER'
 SITEURL = ''
 
+# DIR for content
 PATH = 'content'
 
 TIMEZONE = 'Asia/Shanghai'
-
-DEFAULT_LANG = 'cn'
+DEFAULT_LANG = 'en'
 
 # Feed generation is usually not desired when developing
 FEED_ALL_ATOM = None
@@ -21,23 +21,32 @@ AUTHOR_FEED_ATOM = None
 AUTHOR_FEED_RSS = None
 
 MENUITEMS = [
-    ('文章', '/index.html'),
+    ('About', 'pages/about.html')
+    # ('文章', '/index.html'),
     # ('归档', '/archives.html'),
     # ('标签', '/tags.html'),
-    ('关于', '/pages/about.html')
 ]
 
-DEFAULT_PAGINATION = False
+# For simple-bootstrap template use.
+MENUITEMS_DICT = {title: link for title, link in MENUITEMS}
+
+DEFAULT_PAGINATION = 8
 
 # Uncomment following line if you want document-relative URLs when developing
-#RELATIVE_URLS = True
+RELATIVE_URLS = True
 
 # Customized confs.
-THEME = 'theme'
+THEME = 'simple-bootstrap'
 
 # easy hack for getting the current time in jinja
-NOW = datetime.now()
+# NOW = datetime.now()
 LOAD_CONTENT_CACHE = False
 
 STATIC_PATHS = ['images', 'extra/CNAME']
 EXTRA_PATH_METADATA = {'extra/CNAME': {'path': 'CNAME'}}
+
+SUMMARY_MAX_LENGTH = 15
+
+## plugins #########################
+# PLUGIN_PATHS = ['plugins']
+# PLUGINS = ["render_math"]

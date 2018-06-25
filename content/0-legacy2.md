@@ -4,8 +4,8 @@ Modified: 2015-09-05 23:13:47
 Category: kaggle
 Tags: kaggle, poisson, ensembling, stacking, insurance, gini
 Authors: tester, mult1vac
-Summary: Write-up for Liberty Mutual's Hazard Prediction
 Status: published
+Summary: ![index](images/2015-09-05/gini.png) I'd say I did not bad (LB top25%) in this game and still have long way to go. Since for what I've done there are pros and cons, it's time to make a summing-up.
 
 
 I'd say I did not bad (LB top25%) in [this game](https://www.kaggle.com/c/liberty-mutual-group-property-inspection-prediction) and still have long way to go. Since for what I've done there are pros and cons, it's time to make a summing-up.
@@ -24,9 +24,10 @@ This game uses normalized Gini coefficient as evaluation (check [this](https://w
 - First, only the order of the prediction matters. After submission, predictions are ordered from largest to smallest. Then we only focus on the corresponding real values and calculate: for the top x% of predictions, what percent of real values are cumulated. A Lorentz curve is drawn then.
 - Second, there is a "perfect" curve, your model's curve and a "null" model's curve. Perfect curve assumes the order of predictions are all correct. A null model means a model which generates random predictions. So ideally it will generate a diagonal Lorentz curve. The area between your curve and the diagonal curve is the Gini coefficient, then devided by the perfect model's Gini coefficient gets the normalized one. Python code is given in the end.
 
-<div  align="center">
+<!-- <div  align="center">
 {% img center {filename}/images/2015-09-05/gini.png gini %}
-</div>
+</div> -->
+![normal](images/2015-09-05/gini.png)
 
 ### My Solution
 
@@ -54,9 +55,10 @@ This competition's features consist of numeric ones and categorical ones. Since 
 
 I used weighted averaging to ensemble different models. The tool I took is [Scipy's COBYLA](http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fmin_cobyla.html) to combine 5-fold holdout predictions from each model. I find it's handy to keep k-fold's index because new models can be easily thrown into the ensemble afterwards. The final weights of selected models are as follows.
 
-<div  align="center">
+<!-- <div  align="center">
 {% img center {filename}/images/2015-09-05/ensemble.png ensemble %}
-</div>
+</div> -->
+![normal](images/2015-09-05/ensemble.png)
 
 ### Lesson Learnt
 
@@ -75,11 +77,11 @@ $$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} }$$
 
 Rewrite the distribution as:
 
-$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} } = \frac{1} { {y!} }\exp (y\log\lambda  - \lambda )$$
+$$p(y;\lambda ) = \frac{ { {e^{ - \lambda } } {\lambda ^y} } } { {y!} } = \frac{1} {y!}\exp (y\log\lambda  - \lambda )$$
 
 Comparing with the standard form of the exponential family we can get:
 
-$$b(y) = \frac{1}{ {y!} } \\ \eta  = \log \lambda \\ T(y) = y \\ a(\eta ) = {e^\eta }$$
+$$b(y) = \frac {1} { {y!} } \\ \eta  = \log \lambda \\ T(y) = y \\ a(\eta ) = {e^\eta }$$
 
 Using Generalized Linear Model's constructing rule, the hyposis of Poisson Regression can be written as follows (the first equality uses GLM's second assumption and the third equality uses the fact Poisson distribution's mean is $\lambda$)
 
