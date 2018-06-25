@@ -1,15 +1,16 @@
 Title: 国外 Chatbot 初创公司收集
-Date: 2018-06-15 12:13:24
-Modified: 2018-06-15 12:13:27
+Date: 2018-06-14 12:13:24
+Modified: 2018-06-14 12:13:27
 Category: 人工智能
 Tags: AI, bot, chatbot
 Slug: chatbot-startups-abroad
 Authors: mult1vac
 Status: published
-Summary: 一个AI, http://www.yige.ai/, 类型：ToB、ToD, 领域：Bot 创建平台, 位置：北京, 由世纪佳缘开发的免费创建虚拟对话机器人（Bot）应用的在线平台。
-
+Summary: 调研了国外 Chatbot 公司，整理一份清单。国外的公司专注在细分市场，包括机器人自动创建、底层技术研究、知识管理、信息安全、高校信息服务、保险、CRM 等。甚至还看到了《黑镜》中曾出现过的科技 -- 保存人的生前记忆。相对于开放域在技术上面的限制，目前 Chatbot 还主要停留在封闭域的应用，因此，机器人在许多细分的市场还有很多机会。
 
 ![normal]({filename}/images/3/startup.jpeg)
+
+调研了国外 Chatbot 公司，整理一份清单。国外的公司专注在细分市场，包括机器人自动创建、底层技术研究、知识管理、信息安全、高校信息服务、保险、CRM 等。甚至还看到了《黑镜》中曾出现过的科技 -- 保存人的生前记忆。相对于开放域在技术上面的限制，目前 Chatbot 还主要停留在封闭域的应用，因此，机器人在许多细分的市场还有很多机会。
 
 ### [AdmitHub](https://www.admithub.com/)
 
