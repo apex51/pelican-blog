@@ -228,6 +228,7 @@ train_y[0]:
 <p>测试分类效果，注意，这里「晚上营业到几点？」并没有在 JSON 文件中定义过，分类器也可以推断出意图。因为模型能从「晚上」「营业」「几点」中推断出该问题的意图是 。</p>
 <div class="highlight"><pre><span></span>&gt;&gt;&gt; classify(&quot;晚上营业到几点&quot;)
 [(&#39;hours&#39;, 0.8909908)]
+
 &gt;&gt;&gt; reply(&quot;晚上营业到几点&quot;)
 我们营业时间是 9am-9pm
 </pre></div>
@@ -236,6 +237,7 @@ train_y[0]:
 <p>更多测试：</p>
 <div class="highlight"><pre><span></span>&gt;&gt;&gt; reply(&quot;最近有什么打折活动吗？&quot;)
 本周三酒水饮料自助，会员支付 8 折优惠
+
 &gt;&gt;&gt; reply(&quot;推荐一些菜吧&quot;)
 罗勒披萨、千层面和海鲜饭
 </pre></div>
@@ -286,6 +288,7 @@ train_y[0]:
 <p>测试一下上下文场景是否生效：</p>
 <div class="highlight"><pre><span></span>&gt;&gt;&gt; reply(&quot;我能订餐吗&quot;)
 可以的，请问是今天还是明天的？（context）
+
 &gt;&gt;&gt; reply(&quot;今天&quot;)
 OK，正在为您接通本店电话，请稍等。
 </pre></div>
