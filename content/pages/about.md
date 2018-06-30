@@ -3,17 +3,20 @@ Date: 2018-05-30 16:45:25
 Slug: about
 Authors: mult1vac
 
+![normal]({filename}/images/pages/滨江钱塘.jpeg)
+
+
 > Everyday is an opportunity to measure and reduce the personal residual. My only goal is to gradient boost over myself of yesterday. And to repeat this everyday with an unconquerable spirit. 
+
 
 
 #### 关于
 
-- 一个矫情的程序员，数据科学汪
-- 在花厂和猪场工作过，创业未半而中道崩殂
-- MBTI 长期摇摆在 INTJ 和 INFJ，Ennegram 5w4
-- 长期加点心理学和语言学天赋树
-- 一名快乐的 Indie Hacker，长期关注程序员微创业
-- 爱好机器学习、函数式编程、电子竞技、汽车、摇滚乐和其它
+- 隐居杭城的数据科学汪，快乐的 [Indie Hacker](https://www.indiehackers.com/)，关注程序员微创业；
+- 曾在花厂和猪场工作，创业未半而中道崩殂；
+- MBTI 长期摇摆在 INTJ 和 INFJ，Ennegram 5w4；
+- 长期加点心理学和人类语言学天赋树；
+- 爱好机器学习、函数式编程、电子竞技、汽车、音乐；
 
 #### 联系
 
