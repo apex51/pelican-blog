@@ -6,10 +6,9 @@ Authors: mult1vac
 下载我的简历： [PDF](../extra/蒋浩-简历.pdf) 或 [Pages](../extra/蒋浩-简历.pages)
 
 ### 个人简介
-* 手机：15850730108
-* 邮箱：nju.jianghao@foxmail.com
-* 三年算法研发经验；数据科学方向的全栈工程师：懂算法、会技术、能数据分析、又能独立开发数据产品；
-* 希望加入一支使用深度学习技术的团队，并在团队中做长时间的积淀；
+* 四年数据工作经验，三年算法研发经验；数据科学方向的全栈工程师：懂算法、会技术、能数据分析、又能独立开发数据产品；
+* 希望加入一支使用深度学习技术的团队，并在团队中做长时间的积淀 @杭州/上海；
+* 手机 15850730108，微信 455055657，邮箱 nju.jianghao@foxmail.com
 
 ### 学历
 * 硕士 2011 - 2014 南京大学 计算机科学与技术系
@@ -28,7 +27,7 @@ Authors: mult1vac
 * **深度学习在用户模型的应用：**使用 Tensorflow，结合用户的基础特征和时序行为，将多种深度学习模型（DNN、LSTM、RBM 等）作为编码器，应用于用户向量的生成；
 * **推荐策略优化：**负责 KNN 推荐策略的开发、与不同用户模型组合的尝试、参数调试、AB 测试和上线；目前 KNN 是网易新闻线上主力推荐策略之一；
 * **新用户内容推荐：**使用 bandit 算法，结合平台用户的先验数据，对新用户的冷启动推荐策略进行改进，提升了新用户的留存率；
-* **其它：**使用 Levenshtein 对地理位置文本信息标准化；使用 Greedy Set Cover 算法计算兴趣点的用户覆盖度，优化用户的召回率；团队技术分享；等等
+* **其它：**使用 Levenshtein 距离对地理位置文本信息标准化；使用 Greedy Set Cover 算法计算兴趣点的用户覆盖度，优化用户的召回率；团队技术分享；等等
 
 #### 2015.10 - 2017.04 算法工程师 丁香园 杭州
 * **工作内容：**参与丁香园大数据部门的早期创建，推动多项项目的实施，在离开时，贡献了当时部门项目的 90% 的代码；
@@ -52,8 +51,8 @@ Authors: mult1vac
 
 ### 技能树
 * 良好的英文阅读和写作能力；
-* 工作中熟练使用 Python_Scala_Java，熟悉 R；
-* 熟悉 Mac_Linux 下的工程开发，熟练使用 Git，熟练使用 Maven_SBT，熟悉单元测试方法；
-* 熟练使用常用机器学习算法：通用线性模型、随机树和森林、GBDT、深度学习（RNN，LSTM，Seq2Seq）、非监督模型（k-means，LDA，Factor Analysis）；
-* 熟练使用 Python 下的 Sklearn、xgboost、Keras、Tensorflow、gensim 进行机器学习应用的开发，熟悉 Python 下的爬虫开发和后端开发；
+* 工作中熟练使用 Python/Scala/Java，熟悉 R；
+* 熟悉 Mac/Linux 下的工程开发，熟练使用 Git，熟练使用 Maven_SBT，熟悉单元测试方法；
+* 熟练使用常用机器学习算法：通用线性模型、随机树和森林、GBDT、深度学习（RNN，LSTM，seq2seq 等）、非监督模型（k-means，LDA，Factor Analysis）；
+* 熟练使用 Python 下的 NumPy、sklearn、XGBoost、Keras、TensorFlow、gensim 进行机器学习应用的开发，熟悉 Python 下的爬虫开发和后端开发；
 * 熟练使用 Java/Scala 基于 Hadoop、Spark、Spark Streaming、Hive、HBase、Redis、Kafka 的开发，熟悉 Elastic Search 并能快速搭建和优化搜索引擎；熟练使用 Hive-SQL 进行大规模数据分析和挖掘；
