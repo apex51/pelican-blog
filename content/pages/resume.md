@@ -3,6 +3,8 @@ Date: 2018-06-03 15:17:21
 Slug: resume
 Authors: mult1vac
 
+下载我的简历： [PDF](../extra/蒋浩-简历.pdf) 或 [Pages](../extra/蒋浩-简历.pages)
+
 ### 个人简介
 * 手机：15850730108
 * 邮箱：nju.jianghao@foxmail.com

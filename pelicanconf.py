@@ -42,7 +42,7 @@ THEME = 'simple-bootstrap'
 # NOW = datetime.now()
 LOAD_CONTENT_CACHE = False
 
-STATIC_PATHS = ['images', 'extra/CNAME']
+STATIC_PATHS = ['images', 'extra/CNAME', 'extra']
 EXTRA_PATH_METADATA = {'extra/CNAME': {'path': 'CNAME'}}
 
 SUMMARY_MAX_LENGTH = 15
