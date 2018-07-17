@@ -3,8 +3,8 @@
 from __future__ import unicode_literals
 from datetime import datetime
 
-AUTHOR = 'mult1vac'
-SITENAME = 'FROM A MAKER'
+AUTHOR = 'multivac'
+SITENAME = '仿生人梦见电子羊'
 SITEURL = ''
 
 # DIR for content
